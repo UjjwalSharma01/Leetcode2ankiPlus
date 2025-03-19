@@ -2,6 +2,12 @@
  * Main entry point for web requests
  * This function delegates to the appropriate handler based on the HTTP method
  */
+/*
+
+****************************************************************************************************************************
+Replace YOUR_SPREADSHEET_ID with your spreadsheet ID with edit access enabled otherwise, it won't work
+
+*/
 function doRequest(request) {
   const method = request.method || 'GET';
   
