@@ -43,135 +43,18 @@ This userscript enhances your LeetCode experience by allowing you to:
 
 1. Go to [Google Apps Script](https://script.google.com/)
 2. Create a new project
-3. Replace the default code with the following:
-4. Select the `doRequest` function from the drop-down menu as the function to run
+3. Replace the default code with the https://github.com/UjjwalSharma01/Leetcode2ankiPlus/blob/main/GoogleAppsScript.gs:
+4. Do the necessary mentioned changes in the file
+5. Select the `doRequest` function from the drop-down menu as the function to run
 
-```javascript
-/**
- * Main entry point for web requests
- * This function delegates to the appropriate handler based on the HTTP method
- */
-function doRequest(request) {
-  const method = request.method || 'GET';
-  
-  if (method === 'POST') {
-    return doPost(request);
-  } else if (method === 'OPTIONS') {
-    return doOptions(request);
-  } else {
-    return doGet(request);
-  }
-}
-
-/**
- * Handles OPTIONS requests for CORS preflight
- */
-function doOptions(e) {
-  var lock = LockService.getScriptLock();
-  lock.tryLock(10000);
-  
-  var headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
-    'Access-Control-Max-Age': '3600'
-  };
-  
-  return ContentService
-    .createTextOutput(JSON.stringify({"status": "success"}))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeaders(headers);
-}
-
-/**
- * Handles GET requests - returns a simple status for testing
- */
-function doGet(e) {
-  var headers = {
-    'Access-Control-Allow-Origin': '*'
-  };
-  
-  return ContentService
-    .createTextOutput(JSON.stringify({
-      "status": "online", 
-      "message": "Google Sheets API is running"
-    }))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeaders(headers);
-}
-
-/**
- * Handles POST requests from the userscript
- * Adds the problem data to a Google Sheet
- */
-function doPost(e) {
-  // Set CORS headers
-  var headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept'
-  };
-  
-  try {
-    // Replace with your sheet ID
-    const sheet = SpreadsheetApp.openById("YOUR_SPREADSHEET_ID").getActiveSheet();
-    const data = JSON.parse(e.postData.contents);
-    
-    // Validate required fields
-    if (!data.id || !data.title) {
-      return ContentService
-        .createTextOutput(JSON.stringify({
-          "error": "Missing required fields",
-          "result": "error"
-        }))
-        .setMimeType(ContentService.MimeType.JSON)
-        .setHeaders(headers);
-    }
-    
-    // Process the tags array
-    let tagsString = "";
-    if (data.tags && Array.isArray(data.tags)) {
-      tagsString = data.tags.join(", ");
-    }
-    
-    sheet.appendRow([
-      new Date(),
-      data.id || "",
-      data.title || "",
-      data.difficulty || "",
-      tagsString,
-      data.url || "",
-      data.status || "Pending"
-    ]);
-    
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        "result": "success",
-        "message": "Data saved successfully"
-      }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders(headers);
-      
-  } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        "error": error.toString(),
-        "result": "error"
-      }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders(headers);
-  }
-}
-```
-
-4. Create a Google Sheet
+6. Create a Google Sheet
    * Go to [Google Sheets](https://sheets.google.com/)
    * Create a new spreadsheet
    * Name the first 7 columns: `Timestamp`, `ID`, `Title`, `Difficulty`, `Tags`, `URL`, `Status`
    * Copy the spreadsheet ID from the URL (the long string between `/d/` and `/edit`)
    * Replace `YOUR_SPREADSHEET_ID` in the Apps Script code with your actual spreadsheet ID
 
-5. Deploy the Apps Script as a web app:
+7. Deploy the Apps Script as a web app:
    * Click on `Deploy > New deployment`
    * Select `Web app` as the deployment type
    * Set `Execute as` to `Me`
