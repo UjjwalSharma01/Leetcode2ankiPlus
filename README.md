@@ -184,7 +184,7 @@ function doPost(e) {
 #### Option 1: One-Click Installation (Recommended)
 
 1. Make sure you have [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/) installed
-2. **[Click here to install LeetCode2Anki Plus](https://github.com/UjjwalSharma01/leetcode2anki-plus/raw/main/leetcode2ankibyUjjwal.user.js)**
+2. **[Click here to install LeetCode2Anki Plus](https://github.com/UjjwalSharma01/Leetcode2ankiPlus/raw/main/leetcode2ankibyUjjwal.user.js)**
 3. Tampermonkey/Violentmonkey will automatically detect the script and open an installation page
 4. Click "Install" to complete the installation
 5. Navigate to your userscript manager's dashboard
@@ -203,7 +203,7 @@ function doPost(e) {
 #### Option 2: Manual Installation
 
 1. Create a new script in Tampermonkey
-2. Copy and paste the script from [leetcode2ankibyUjjwal.user.js](https://github.com/UjjwalSharma01/leetcode2anki-plus/blob/main/leetcode2ankibyUjjwal.user.js)
+2. Copy and paste the script from [leetcode2ankibyUjjwal.user.js](https://github.com/UjjwalSharma01/Leetcode2ankiPlus/blob/main/leetcode2ankibyUjjwal.user.js)
 3. Update the configuration variables at the top of the script (same as in Option 1)
 4. Save the script
 
