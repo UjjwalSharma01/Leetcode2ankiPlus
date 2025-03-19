@@ -43,7 +43,7 @@ This userscript enhances your LeetCode experience by allowing you to:
 
 1. Go to [Google Apps Script](https://script.google.com/)
 2. Create a new project
-3. Replace the default code with the https://github.com/UjjwalSharma01/Leetcode2ankiPlus/blob/main/GoogleAppsScript.gs:
+3. Replace the default code with [this file](https://github.com/UjjwalSharma01/Leetcode2ankiPlus/blob/main/GoogleAppsScript.gs)
 4. Do the necessary mentioned changes in the file
 5. Select the `doRequest` function from the drop-down menu as the function to run
 
