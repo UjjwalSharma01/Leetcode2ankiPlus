@@ -29,7 +29,7 @@
     const language = 'C++';
     const langShortName = 'cpp';
     // Update this URL with your latest deployed web app URL if it changed
-    const googleScriptUrl = 'https://script.google.com/macros/s/AKfycby3U5afzgs2FZBWXVJHrUX5BtyxEpAN8rSUA4HD18jnRqdcshF_p697b6hwBbje92G4/exec';
+    const googleScriptUrl = 'ENTER YOUR DATA HERE';
 
     // Debug mode - set to true to see more detailed logging
     const DEBUG = true;
