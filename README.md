@@ -71,7 +71,7 @@ This userscript enhances your LeetCode experience by allowing you to:
 
 ### 3. Set Up Spaced Repetition System (SRS)
 
-1. In the same Google Apps Script project, create a new script file
+1. In google sheets app, click on extension and then click on Apps Script, create a new script
 2. Name it `SpacedRepetitionSystem.gs`
 3. Copy the code from our [SpacedRepetitionSystem.gs](https://github.com/UjjwalSharma01/Leetcode2ankiPlus/blob/main/SpacedRepetitionSystem.gs) file
 4. Save the script
@@ -102,7 +102,7 @@ This userscript enhances your LeetCode experience by allowing you to:
 
 #### Option 2: Manual Installation
 
-1. Create a new script in Tampermonkey
+1. Create a new script in Tampermonkey/Violentmonkey(**Recommended**)
 2. Copy and paste the script from [leetcode2ankibyUjjwal.user.js](https://github.com/UjjwalSharma01/Leetcode2ankiPlus/blob/main/leetcode2ankibyUjjwal.user.js)
 3. Update the configuration variables at the top of the script (same as in Option 1)
 4. Save the script
@@ -183,7 +183,7 @@ Our integrated Spaced Repetition System (SRS) offers a complete solution for rev
 - **Problem not marked as solved**: Ensure your solution is accepted before trying to save
 - **First attempt tracking issues**: If you're experiencing problems with first attempt tracking, please update to the latest version
 
-### Known Issues
+### Known Issues (working towards fixing these)
 
 - **First Attempt Detection**: The system sometimes fails to correctly identify whether a submission was successful on the first attempt. This is a complex issue due to LeetCode's dynamic UI updates and various submission result formats. We're working on a more robust solution.
   - **Symptoms**: "First Attempt: Not recorded" appears in the submission dialog even after making submissions
