@@ -17,11 +17,6 @@ This userscript enhances your LeetCode experience by allowing you to:
 - **Performance Metrics**: Tracks solve time and first attempt success/failure
 - **Spaced Repetition System**: Advanced Google Sheets-based SRS for tracking your DSA review schedule
 
-### Recent Bug Fixes
-- **First Attempt Tracking**: Fixed issue where first attempt failures weren't correctly tracked when multiple submissions were made
-- **Monaco Editor Detection**: Improved code extraction from newer LeetCode UI versions
-- **Submission Result Detection**: Enhanced detection of submission results across different LeetCode page layouts
-
 ### Improvements Over Original leetcode2anki.user.js
 
 | Feature | Original | Enhanced Version |
