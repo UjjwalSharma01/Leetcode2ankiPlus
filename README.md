@@ -5,6 +5,7 @@
 This userscript enhances your LeetCode experience by allowing you to:
 1. Save solved problems to Anki for spaced repetition learning
 2. Track your progress by automatically logging problems to Google Sheets
+3. Use our built-in Google Sheets spaced repetition system to systematically review problems
 
 ## 🚀 Features
 
@@ -13,6 +14,13 @@ This userscript enhances your LeetCode experience by allowing you to:
 - **Google Sheets Integration**: Track your LeetCode journey by logging problems to Google Sheets
 - **Beautiful Cards**: Well-formatted Anki cards with syntax highlighting
 - **Robust Error Handling**: Handles connection failures and retries automatically
+- **Performance Metrics**: Tracks solve time and first attempt success/failure
+- **Spaced Repetition System**: Advanced Google Sheets-based SRS for tracking your DSA review schedule
+
+### Recent Bug Fixes
+- **First Attempt Tracking**: Fixed issue where first attempt failures weren't correctly tracked when multiple submissions were made
+- **Monaco Editor Detection**: Improved code extraction from newer LeetCode UI versions
+- **Submission Result Detection**: Enhanced detection of submission results across different LeetCode page layouts
 
 ### Improvements Over Original leetcode2anki.user.js
 
@@ -25,6 +33,8 @@ This userscript enhances your LeetCode experience by allowing you to:
 | LeetCode UI Support | Basic | Compatible with latest UI changes |
 | Network Handling | No retries | Automatic retries with backoff |
 | Code Extraction | Single method | Multiple fallback methods |
+| First Attempt Tracking | None | Tracks success/failure of first attempts |
+| Spaced Repetition | None | Complete Google Sheets SRS system |
 
 ## 📋 Prerequisites
 
@@ -64,7 +74,17 @@ This userscript enhances your LeetCode experience by allowing you to:
    * Click `Deploy`
    * Copy the generated web app URL
 
-### 3. Install the Userscript
+### 3. Set Up Spaced Repetition System (SRS)
+
+1. In the same Google Apps Script project, create a new script file
+2. Name it `SpacedRepetitionSystem.gs`
+3. Copy the code from our [SpacedRepetitionSystem.gs](https://github.com/UjjwalSharma01/Leetcode2ankiPlus/blob/main/SpacedRepetitionSystem.gs) file
+4. Save the script
+5. Open your spreadsheet and refresh the page
+6. You'll see a new menu item `LeetCode SRS` in the top menu
+7. Click on `LeetCode SRS > Setup System` to initialize the spaced repetition sheets
+
+### 4. Install the Userscript
 
 #### Option 1: One-Click Installation (Recommended)
 
@@ -100,8 +120,9 @@ This userscript enhances your LeetCode experience by allowing you to:
 4. Click the "Save to Anki" button to add the problem to your Anki collection
 5. Click the "Save to Sheet" button to track the problem in Google Sheets
 
-## 📊 Google Sheets Structure
+## 📊 Google Sheets Integration
 
+### Standard Problem Tracking
 The script will populate your Google Sheet with the following columns:
 
 | Column | Description |
@@ -113,12 +134,38 @@ The script will populate your Google Sheet with the following columns:
 | Tags | Categories/topics related to the problem |
 | URL | Direct link to the problem |
 | Status | Current status (defaults to "Pending") |
+| Solve Time | How long it took to solve the problem |
+| First Attempt | Whether you solved it correctly on first try |
+| Confidence | Self-rated confidence level (1-5) |
 
-You can add additional columns for tracking your progress, such as:
-- Review dates
-- Notes
-- Time to solve
-- Solution approach
+### Spaced Repetition System
+
+Our integrated Spaced Repetition System (SRS) offers a complete solution for reviewing LeetCode problems at optimal intervals:
+
+#### Features
+- **Dynamic Review Schedule**: Schedule reviews based on your confidence level with each problem
+- **Review Count**: Tracks the number of reviews completed for each problem
+- **Review Dashboard**: Shows problems due for review today in an easy-to-use interface
+- **Performance Metrics**: Tracks review history and performance over time
+- **Batch Reviews**: Complete multiple reviews at once with batch functionality
+- **Import/Export**: Easily import or export your review schedule for backup or sharing
+
+#### Using the SRS System
+1. From your Google Sheet, click the `LeetCode SRS` menu
+2. Select `Add Problems to Review` to add solved problems to the SRS system
+3. The system will schedule the first review (typically for the next day)
+4. When reviews are due, open the sheet and select `LeetCode SRS > Dashboard`
+5. Complete your reviews by rating each problem as Easy, Medium, or Hard
+6. The system will automatically reschedule problems based on your ratings
+7. Continue this process to maintain optimal review intervals
+
+#### SRS Menu Options
+- `Add Problems to Review`: Add new problems to the spaced repetition system
+- `Add Today's Problems`: Add problems solved today with custom review dates
+- `Complete Today's Review`: Mark reviews as complete and schedule next review
+- `Batch Complete Reviews`: Process multiple reviews at once
+- `Reschedule Pending Reviews`: Adjust review dates for pending problems
+- `Import/Export`: Import problems from CSV or export schedule for backup
 
 ## ⚠️ Troubleshooting
 
@@ -133,11 +180,20 @@ You can add additional columns for tracking your progress, such as:
 - **HTML response instead of JSON**: Redeploy your Apps Script and ensure CORS settings are correct
 - **Permission errors**: Make sure your script is deployed with "Anyone, even anonymous" access
 - **Timeout errors**: The script includes retry logic, but very slow connections may still fail
+- **SRS menu missing**: Refresh the page or check if the SpacedRepetitionSystem.gs script was properly added
 
 ### LeetCode Issues
 
 - **Code not detecting**: The script tries multiple methods to extract your code; if it fails, your code will not be saved
 - **Problem not marked as solved**: Ensure your solution is accepted before trying to save
+- **First attempt tracking issues**: If you're experiencing problems with first attempt tracking, please update to the latest version
+
+### Known Issues
+
+- **First Attempt Detection**: The system sometimes fails to correctly identify whether a submission was successful on the first attempt. This is a complex issue due to LeetCode's dynamic UI updates and various submission result formats. We're working on a more robust solution.
+  - **Symptoms**: "First Attempt: Not recorded" appears in the submission dialog even after making submissions
+  - **Current Workaround**: You can manually note your first attempt result in the remarks field when saving to Google Sheets
+  - **Future Improvements**: We're exploring more reliable methods to detect first attempt success/failure
 
 ## 🧪 Testing Google Sheets Integration
 
