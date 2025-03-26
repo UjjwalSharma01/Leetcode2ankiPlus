@@ -1,7 +1,7 @@
 # LeetCode2Anki Plus by Ujjwal Sharma
 
 > **🧠 NEW: Want to understand how this project works?** Check out [learning.md](./LearningForYou.md) for a complete breakdown of JavaScript concepts used in this project! Perfect for interviews or learning advanced coding patterns. Unlike other open-source projects, we provide explicit explanations of every technique used and potential interview questions with answers.
-
+[introductory videp](https://youtu.be/tdJt1dM39ek)
 This userscript enhances your LeetCode experience by allowing you to:
 1. Save solved problems to Anki for spaced repetition learning
 2. Track your progress by automatically logging problems to Google Sheets
