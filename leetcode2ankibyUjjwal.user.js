@@ -249,6 +249,10 @@
             // Get the mouse cursor position at startup
             pos3 = e.clientX;
             pos4 = e.clientY;
+
+            // Remove right property when starting to drag to prevent positioning conflicts
+            element.style.right = '';
+
             document.addEventListener('mouseup', closeDragElement);
             document.addEventListener('mousemove', elementDrag);
         }
@@ -311,9 +315,11 @@
                 if (position) {
                     // Apply both top and left positions
                     if (position.top) solveTimer.style.top = position.top;
-                    if (position.left) solveTimer.style.left = position.left;
-                    // If right was set, we need to remove it to allow left to work
-                    solveTimer.style.right = '';
+                    if (position.left) {
+                        solveTimer.style.left = position.left;
+                        // Always clear right property when left is applied to prevent conflicts
+                        solveTimer.style.right = '';
+                    }
 
                     if (DEBUG) console.log("Loaded timer position:", position);
                 }
