@@ -5,9 +5,13 @@
 /*
 
 ****************************************************************************************************************************
-Replace YOUR_SPREADSHEET_ID with your spreadsheet ID with edit access enabled otherwise, it won't work
+Replace SPREADSHEET_ID below with your spreadsheet ID with edit access enabled otherwise, it won't work
 
 */
+
+// Set your spreadsheet ID here - only need to change in one place
+const SPREADSHEET_ID = "YOUR_SPREADSHEET_ID";
+
 /**
  * Main entry point for web requests
  * This function delegates to the appropriate handler based on the HTTP method
@@ -31,34 +35,126 @@ function doOptions(e) {
   var lock = LockService.getScriptLock();
   lock.tryLock(10000);
   
-  var headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
-    'Access-Control-Max-Age': '3600'
+  // Create a response object compatible with CORS
+  const output = ContentService.createTextOutput(JSON.stringify({"status": "success"}));
+  output.setMimeType(ContentService.MimeType.JSON);
+  
+  // Add headers to the response manually via advanced service
+  const response = { 
+    status: "success", 
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+      'Access-Control-Max-Age': '3600'
+    }
   };
   
-  return ContentService
-    .createTextOutput(JSON.stringify({"status": "success"}))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeaders(headers);
+  // Return the content and let Apps Script handle the headers properly
+  return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
 }
 
 /**
  * Handles GET requests - returns a simple status for testing
+ * If action=getProblems is passed, returns all problems in the sheet
  */
 function doGet(e) {
-  var headers = {
-    'Access-Control-Allow-Origin': '*'
+  // Check if the request is for all problems
+  if (e && e.parameter && e.parameter.action === 'getProblems') {
+    return getAllProblems();
+  }
+  
+  // Create a response with necessary CORS headers included in the JSON
+  const response = {
+    "status": "online", 
+    "message": "Google Sheets API is running",
+    "headers": {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+      'Access-Control-Max-Age': '3600'
+    }
   };
   
-  return ContentService
-    .createTextOutput(JSON.stringify({
-      "status": "online", 
-      "message": "Google Sheets API is running"
-    }))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeaders(headers);
+  return ContentService.createTextOutput(JSON.stringify(response))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Returns all problem data as JSON for the web UI
+ * This is used by the Next.js application to display problems
+ */
+function getAllProblems() {
+  try {
+    // Use the centralized spreadsheet ID variable
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
+    const data = sheet.getDataRange().getValues();
+    
+    if (data.length <= 1) {
+      // No data or only headers
+      const response = {
+        "success": true,
+        "problems": [],
+        "headers": {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+          'Access-Control-Max-Age': '3600'
+        }
+      };
+      return ContentService
+        .createTextOutput(JSON.stringify(response))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    const headerRow = data[0];
+    
+    // Convert sheet data to JSON
+    const problems = [];
+    for (let i = 1; i < data.length; i++) {
+      const problem = {};
+      for (let j = 0; j < headerRow.length; j++) {
+        // Handle date objects for the Timestamp column
+        if (j === 0 && data[i][j] instanceof Date) {
+          problem[headerRow[j]] = data[i][j].toISOString();
+        } else {
+          problem[headerRow[j]] = data[i][j];
+        }
+      }
+      problems.push(problem);
+    }
+    
+    // Include CORS headers in the response object
+    const response = {
+      "success": true,
+      "problems": problems,
+      "headers": {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+        'Access-Control-Max-Age': '3600'
+      }
+    };
+    
+    return ContentService
+      .createTextOutput(JSON.stringify(response))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    const errorResponse = {
+      "success": false,
+      "error": error.toString(),
+      "headers": {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+        'Access-Control-Max-Age': '3600'
+      }
+    };
+    
+    return ContentService
+      .createTextOutput(JSON.stringify(errorResponse))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 }
 
 /**
@@ -66,27 +162,27 @@ function doGet(e) {
  * Adds the problem data to a Google Sheet
  */
 function doPost(e) {
-  // Set CORS headers
-  var headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept'
-  };
-  
   try {
-    // Use your actual spreadsheet ID
-    const sheet = SpreadsheetApp.openById("YOUR_SPREADSHEET_ID").getActiveSheet();
+    // Use the centralized spreadsheet ID variable
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
     const data = JSON.parse(e.postData.contents);
     
     // Validate required fields
     if (!data.id || !data.title) {
+      const errorResponse = {
+        "error": "Missing required fields",
+        "result": "error",
+        "headers": {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+          'Access-Control-Max-Age': '3600'
+        }
+      };
+      
       return ContentService
-        .createTextOutput(JSON.stringify({
-          "error": "Missing required fields",
-          "result": "error"
-        }))
-        .setMimeType(ContentService.MimeType.JSON)
-        .setHeaders(headers);
+        .createTextOutput(JSON.stringify(errorResponse))
+        .setMimeType(ContentService.MimeType.JSON);
     }
     
     // Check if this problem already exists in the sheet
@@ -112,24 +208,38 @@ function doPost(e) {
       Logger.log(statusMessage);
     }
     
+    const successResponse = {
+      "result": "success",
+      "message": statusMessage,
+      "wasUpdated": !!(existingEntry && data.update !== false),
+      "headers": {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+        'Access-Control-Max-Age': '3600'
+      }
+    };
+    
     return ContentService
-      .createTextOutput(JSON.stringify({
-        "result": "success",
-        "message": statusMessage,
-        "wasUpdated": !!(existingEntry && data.update !== false)
-      }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders(headers);
+      .createTextOutput(JSON.stringify(successResponse))
+      .setMimeType(ContentService.MimeType.JSON);
       
   } catch (error) {
+    const errorResponse = {
+      "error": error.toString(),
+      "result": "error",
+      "stack": error.stack,
+      "headers": {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+        'Access-Control-Max-Age': '3600'
+      }
+    };
+    
     return ContentService
-      .createTextOutput(JSON.stringify({
-        "error": error.toString(),
-        "result": "error",
-        "stack": error.stack
-      }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders(headers);
+      .createTextOutput(JSON.stringify(errorResponse))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
