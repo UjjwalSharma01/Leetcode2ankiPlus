@@ -221,11 +221,16 @@ export default function ProblemsPage() {
                 </div>
                 
                 {/* Results count */}
-                <div className="flex items-end">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Showing <span className="font-medium text-gray-900 dark:text-white">{sortedProblems.length}</span> of{' '}
-                    <span className="font-medium text-gray-900 dark:text-white">{problems.length}</span> problems
-                  </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Results
+                  </label>
+                  <div className="mt-1 flex h-10 items-center">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Showing <span className="font-medium text-gray-900 dark:text-white">{sortedProblems.length}</span> of{' '}
+                      <span className="font-medium text-gray-900 dark:text-white">{problems.length}</span> problems
+                    </p>
+                  </div>
                 </div>
               </div>
               
