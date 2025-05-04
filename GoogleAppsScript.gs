@@ -57,11 +57,17 @@ function doOptions(e) {
 /**
  * Handles GET requests - returns a simple status for testing
  * If action=getProblems is passed, returns all problems in the sheet
+ * If action=getDueReviews is passed, returns problems due for review
  */
 function doGet(e) {
   // Check if the request is for all problems
   if (e && e.parameter && e.parameter.action === 'getProblems') {
     return getAllProblems();
+  }
+  
+  // Check if the request is for due reviews
+  if (e && e.parameter && e.parameter.action === 'getDueReviews') {
+    return getDueReviews();
   }
   
   // Create a response with necessary CORS headers included in the JSON
@@ -158,14 +164,97 @@ function getAllProblems() {
 }
 
 /**
+ * Gets problems due for review
+ */
+function getDueReviews() {
+  try {
+    // Use the centralized spreadsheet ID variable
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const revisionSheet = ss.getSheetByName("Revision Schedule");
+    
+    if (!revisionSheet) {
+      return createJsonResponse({
+        "success": false,
+        "error": "Revision Schedule sheet not found. SRS system may not be set up."
+      });
+    }
+    
+    // Get the current date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Get all data from the revision sheet
+    const data = revisionSheet.getDataRange().getValues();
+    if (data.length <= 1) {
+      return createJsonResponse({
+        "success": true,
+        "dueReviews": []
+      });
+    }
+    
+    const headerRow = data[0];
+    
+    // Find indices for key columns
+    const idIndex = headerRow.findIndex(col => col === "Problem ID");
+    const titleIndex = headerRow.findIndex(col => col === "Title");
+    const nextReviewIndex = headerRow.findIndex(col => col === "Next Review Date");
+    const reviewCountIndex = headerRow.findIndex(col => col === "Review Count");
+    const statusIndex = headerRow.findIndex(col => col === "Status");
+    
+    if (idIndex === -1 || nextReviewIndex === -1 || statusIndex === -1) {
+      return createJsonResponse({
+        "success": false,
+        "error": "Required columns not found in Revision Schedule sheet"
+      });
+    }
+    
+    // Find problems due today or earlier
+    const dueReviews = [];
+    for (let i = 1; i < data.length; i++) {
+      const nextReviewDate = new Date(data[i][nextReviewIndex]);
+      nextReviewDate.setHours(0, 0, 0, 0);
+      
+      if (nextReviewDate <= today && data[i][statusIndex] === "Pending") {
+        // Get main sheet data for this problem ID
+        const problemDetails = getProblemDetails(data[i][idIndex]);
+        
+        dueReviews.push({
+          id: data[i][idIndex],
+          title: data[i][titleIndex] || "",
+          reviewCount: data[i][reviewCountIndex] || 0,
+          nextReviewDate: nextReviewDate.toISOString(),
+          details: problemDetails // Additional details from main sheet
+        });
+      }
+    }
+    
+    return createJsonResponse({
+      "success": true,
+      "dueReviews": dueReviews
+    });
+  } catch (error) {
+    return createJsonResponse({
+      "success": false,
+      "error": error.toString()
+    });
+  }
+}
+
+/**
  * Handles POST requests from the userscript
  * Adds the problem data to a Google Sheet
  */
 function doPost(e) {
   try {
+    const data = JSON.parse(e.postData.contents);
+    
+    // Handle review completion
+    if (data.action === 'completeReview') {
+      return completeReview(data);
+    }
+    
     // Use the centralized spreadsheet ID variable
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
-    const data = JSON.parse(e.postData.contents);
     
     // Validate required fields
     if (!data.id || !data.title) {
@@ -241,6 +330,162 @@ function doPost(e) {
       .createTextOutput(JSON.stringify(errorResponse))
       .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+/**
+ * Updates a problem's review status
+ */
+function completeReview(data) {
+  try {
+    // Use the centralized spreadsheet ID variable
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const revisionSheet = ss.getSheetByName("Revision Schedule");
+    
+    if (!revisionSheet) {
+      return createJsonResponse({
+        "success": false,
+        "error": "Revision Schedule sheet not found"
+      });
+    }
+    
+    // Validate required fields
+    if (!data.id) {
+      return createJsonResponse({
+        "success": false,
+        "error": "Problem ID is required"
+      });
+    }
+    
+    // Find the problem row
+    const sheetData = revisionSheet.getDataRange().getValues();
+    let problemRow = -1;
+    
+    for (let i = 1; i < sheetData.length; i++) {
+      if (sheetData[i][0] == data.id) {
+        problemRow = i + 1; // Convert to 1-indexed row number
+        break;
+      }
+    }
+    
+    if (problemRow === -1) {
+      return createJsonResponse({
+        "success": false,
+        "error": `Problem ID ${data.id} not found in revision schedule`
+      });
+    }
+    
+    // Get current data for the problem
+    const rowData = sheetData[problemRow - 1];
+    const reviewCount = rowData[4];
+    
+    // Process based on difficulty rating
+    let nextInterval = 1; // Default: review tomorrow
+    
+    if (data.difficulty === "easy") {
+      nextInterval = Math.min(30, reviewCount * 2 + 1); // Exponential growth, max 30 days
+    } else if (data.difficulty === "medium") {
+      nextInterval = Math.min(14, reviewCount + 2); // Linear growth, max 14 days
+    } else if (data.difficulty === "hard") {
+      nextInterval = 1; // Always tomorrow for hard problems
+    } else if (data.nextInterval) {
+      // Use provided interval if difficulty not specified
+      nextInterval = parseInt(data.nextInterval);
+      if (isNaN(nextInterval) || nextInterval < 1) nextInterval = 1;
+    }
+    
+    // Calculate next review date
+    const nextReviewDate = new Date();
+    if (data.complete === false) {
+      // If marked as not complete, schedule for tomorrow
+      nextReviewDate.setDate(nextReviewDate.getDate() + 1);
+      nextInterval = 1;
+    } else {
+      // Normal schedule based on difficulty
+      nextReviewDate.setDate(nextReviewDate.getDate() + nextInterval);
+    }
+    
+    // Update the problem row
+    revisionSheet.getRange(problemRow, 3, 1, 5).setValues([[
+      new Date(),        // Last Review Date (today)
+      nextReviewDate,    // Next Review Date 
+      reviewCount + 1,   // Review Count
+      nextInterval,      // Interval (days)
+      "Pending"          // Status
+    ]]);
+    
+    // Log the review in history if we have a history sheet
+    const historySheet = ss.getSheetByName("Review History");
+    if (historySheet) {
+      const nextRow = historySheet.getLastRow() + 1;
+      historySheet.getRange(nextRow, 1, 1, 4).setValues([[
+        data.id,
+        new Date(),
+        data.difficulty || "medium",
+        nextInterval
+      ]]);
+    }
+    
+    return createJsonResponse({
+      "success": true,
+      "message": `Review completed for problem ${data.id}. Next review scheduled in ${nextInterval} days.`,
+      "nextReviewDate": nextReviewDate.toISOString(),
+      "nextInterval": nextInterval
+    });
+  } catch (error) {
+    return createJsonResponse({
+      "success": false,
+      "error": error.toString()
+    });
+  }
+}
+
+/**
+ * Utility to get problem details from main sheet
+ */
+function getProblemDetails(problemId) {
+  try {
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
+    const data = sheet.getDataRange().getValues();
+    
+    if (data.length <= 1) return null;
+    
+    const headers = data[0];
+    const idIndex = headers.findIndex(col => col === "ID");
+    
+    if (idIndex === -1) return null;
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idIndex] == problemId) {
+        const problem = {};
+        for (let j = 0; j < headers.length; j++) {
+          problem[headers[j]] = data[i][j];
+        }
+        return problem;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    Logger.log("Error getting problem details: " + error.toString());
+    return null;
+  }
+}
+
+/**
+ * Helper for creating JSON responses with CORS headers
+ */
+function createJsonResponse(obj) {
+  // Add CORS headers to the response object
+  obj.headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+    'Access-Control-Max-Age': '3600'
+  };
+  
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 /**
