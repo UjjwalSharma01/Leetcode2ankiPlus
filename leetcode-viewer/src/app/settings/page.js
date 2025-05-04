@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import { useAuth } from '@/context/AuthContext';
+import { getScriptUrlFromStorage, saveScriptUrl } from '@/utils/scriptUrlManager';
 
 export default function Settings() {
   const [scriptUrl, setScriptUrl] = useState('');
@@ -11,10 +13,11 @@ export default function Settings() {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [saving, setSaving] = useState(false);
   const router = useRouter();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Load saved URL from localStorage on component mount
-    const savedValue = localStorage.getItem('google_script_url') || '';
+    const savedValue = getScriptUrlFromStorage();
     setScriptUrl(savedValue);
     setSavedUrl(savedValue);
   }, []);
@@ -74,12 +77,13 @@ export default function Settings() {
           throw new Error("Google Apps Script returned an invalid response. Make sure your script ID is correct.");
         }
         
-        // Save to localStorage
-        localStorage.setItem('google_script_url', cleanUrl);
+        // Save to both Firebase (if user is logged in) and localStorage
+        await saveScriptUrl(user?.uid || null, cleanUrl);
+        
         setSavedUrl(cleanUrl);
         setMessage({ 
           type: 'success', 
-          text: 'Settings saved successfully! Google Apps Script connection is working.' 
+          text: user ? 'Settings saved successfully! Your settings will sync across all your devices.' : 'Settings saved successfully! Google Apps Script connection is working.' 
         });
         
       } catch (fetchError) {
@@ -121,6 +125,7 @@ export default function Settings() {
               />
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 Enter the URL of your deployed Google Apps Script web app.
+                {user && " Your settings will sync across all your devices."}
               </p>
             </div>
             

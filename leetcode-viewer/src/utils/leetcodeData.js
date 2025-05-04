@@ -1,21 +1,13 @@
 import axios from 'axios';
-
-/**
- * Gets the Google Script URL from localStorage or returns a default
- */
-function getGoogleScriptUrl() {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('google_script_url') || '';
-  }
-  return '';
-}
+import { getScriptUrlFromStorage } from '@/utils/scriptUrlManager';
 
 /**
  * Fetches all LeetCode problems from the Google Sheet
  */
 export async function fetchLeetCodeProblems() {
   try {
-    const scriptUrl = getGoogleScriptUrl();
+    // Get script URL from localStorage (which is synced with Firebase on login)
+    const scriptUrl = getScriptUrlFromStorage();
     
     if (!scriptUrl) {
       throw new Error('Google Script URL is not configured. Please update it in Settings.');

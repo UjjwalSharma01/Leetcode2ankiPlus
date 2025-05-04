@@ -8,6 +8,7 @@ import {
   createUserWithEmailAndPassword
 } from 'firebase/auth';
 import { auth } from '@/firebase/firebase';
+import { getScriptUrlFromFirebase } from '@/utils/scriptUrlManager';
 
 // Create auth context
 const AuthContext = createContext({});
@@ -35,9 +36,17 @@ export const AuthProvider = ({ children }) => {
 
   // Listen for auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
+        
+        // Sync script URL from Firebase to localStorage when user logs in
+        // This ensures consistent experience across devices
+        try {
+          await getScriptUrlFromFirebase(user.uid);
+        } catch (error) {
+          console.error("Error syncing script URL on login:", error);
+        }
       } else {
         setUser(null);
       }
