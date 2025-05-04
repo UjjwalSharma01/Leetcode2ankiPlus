@@ -3,14 +3,21 @@ import { getScriptUrlFromStorage } from '@/utils/scriptUrlManager';
 
 /**
  * Fetches all LeetCode problems from the Google Sheet
+ * @param {boolean} skipUrlCheck - If true, won't throw error for missing URL (for initial Firebase sync)
  */
-export async function fetchLeetCodeProblems() {
+export async function fetchLeetCodeProblems(skipUrlCheck = false) {
   try {
     // Get script URL from localStorage (which is synced with Firebase on login)
     const scriptUrl = getScriptUrlFromStorage();
     
     if (!scriptUrl) {
-      throw new Error('Google Script URL is not configured. Please update it in Settings.');
+      if (skipUrlCheck) {
+        console.log('Script URL not found, but skipping error as requested (waiting for Firebase sync)');
+        return []; // Return empty array instead of throwing error
+      } else {
+        // Instead of throwing an error which crashes the app, return a special object
+        return { needsScriptUrl: true, message: 'Google Script URL is not configured. Please update it in Settings.' };
+      }
     }
     
     console.log("Fetching problems from:", scriptUrl);

@@ -3,6 +3,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { fetchLeetCodeProblems, getProblemStats } from '@/utils/leetcodeData';
 import { useAuth } from './AuthContext';
+import { useRouter } from 'next/navigation';
 
 // Create the context
 const DataContext = createContext();
@@ -14,8 +15,12 @@ export function DataProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastFetched, setLastFetched] = useState(null);
+  const [needsScriptUrl, setNeedsScriptUrl] = useState(false);
+  const [syncInProgress, setSyncInProgress] = useState(true); // Assume sync is in progress initially
+  const [syncTimeout, setSyncTimeout] = useState(null);
   
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   // Load data function that can be called manually - wrapped in useCallback to avoid unnecessary recreations
   const loadData = useCallback(async (force = false) => {
@@ -23,7 +28,7 @@ export function DataProvider({ children }) {
     if (!user) return;
     
     // Skip fetching if data exists and force is false
-    if (problems.length > 0 && !force) {
+    if (problems.length > 0 && !force && !needsScriptUrl) {
       return;
     }
     
@@ -31,17 +36,46 @@ export function DataProvider({ children }) {
       setLoading(true);
       setError(null);
       
-      const data = await fetchLeetCodeProblems();
-      setProblems(data);
-      setStats(getProblemStats(data));
-      setLastFetched(new Date().toISOString());
+      // Pass true for skipUrlCheck during initial login when syncInProgress is true
+      const data = await fetchLeetCodeProblems(syncInProgress);
+      
+      // Check if we got a special response indicating missing script URL
+      if (data && data.needsScriptUrl) {
+        console.log("Script URL not configured, flagging for settings redirect");
+        setNeedsScriptUrl(true);
+        setProblems([]);
+        setStats({});
+      } else {
+        setNeedsScriptUrl(false);
+        setProblems(Array.isArray(data) ? data : []);
+        setStats(getProblemStats(Array.isArray(data) ? data : []));
+        setLastFetched(new Date().toISOString());
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
       setError('Failed to load data. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
-  }, [user, problems.length]);
+  }, [user, problems.length, needsScriptUrl, syncInProgress]);
+
+  // Set up a sync timeout to stop waiting after a reasonable time
+  useEffect(() => {
+    if (user && syncInProgress) {
+      // Wait for 5 seconds max for Firebase sync, then stop waiting
+      const timeout = setTimeout(() => {
+        console.log("Firebase sync timeout reached, no longer waiting");
+        setSyncInProgress(false);
+        
+        // Force a reload of data after sync timeout
+        loadData(true);
+      }, 5000);
+      
+      setSyncTimeout(timeout);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [user, syncInProgress, loadData]);
 
   // Initial data load when user is authenticated
   useEffect(() => {
@@ -55,6 +89,11 @@ export function DataProvider({ children }) {
   useEffect(() => {
     const handleScriptUrlSync = (event) => {
       console.log('Script URL synced from Firebase, auto-refreshing data');
+      
+      // Script URL has been synced from Firebase, no longer waiting
+      setSyncInProgress(false);
+      if (syncTimeout) clearTimeout(syncTimeout);
+      
       loadData(true); // Force refresh data when script URL is updated
     };
 
@@ -67,7 +106,25 @@ export function DataProvider({ children }) {
         window.removeEventListener('scriptUrlSynced', handleScriptUrlSync);
       }
     };
-  }, [loadData]);
+  }, [loadData, syncTimeout]);
+
+  // Redirect to settings page if script URL is needed
+  useEffect(() => {
+    if (needsScriptUrl && !syncInProgress && !loading && !authLoading && user) {
+      console.log("Redirecting to settings page due to missing script URL");
+      
+      // Create notification in sessionStorage
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('notification', JSON.stringify({
+          type: 'warning',
+          message: 'Please configure your Google Script URL to start using the app'
+        }));
+      }
+      
+      // Redirect to settings page
+      router.push('/settings');
+    }
+  }, [needsScriptUrl, syncInProgress, loading, authLoading, user, router]);
 
   // Refresh function for manual data reloading
   const refreshData = useCallback(() => loadData(true), [loadData]);
@@ -80,7 +137,9 @@ export function DataProvider({ children }) {
     error,
     refreshData,
     lastFetched,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    needsScriptUrl,
+    syncInProgress
   };
 
   return (

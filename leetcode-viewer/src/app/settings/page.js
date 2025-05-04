@@ -23,6 +23,24 @@ export default function Settings() {
     const savedValue = getScriptUrlFromStorage();
     setScriptUrl(savedValue);
     setSavedUrl(savedValue);
+    
+    // Check for notification in sessionStorage from redirects
+    if (typeof window !== 'undefined') {
+      const notification = sessionStorage.getItem('notification');
+      if (notification) {
+        try {
+          const notificationData = JSON.parse(notification);
+          setMessage({ 
+            type: notificationData.type === 'warning' ? 'error' : notificationData.type, 
+            text: notificationData.message 
+          });
+          // Remove the notification after displaying it
+          sessionStorage.removeItem('notification');
+        } catch (e) {
+          console.error('Error parsing notification:', e);
+        }
+      }
+    }
   }, []);
 
   const handleSave = async (e) => {
