@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { getScriptUrlFromStorage, saveScriptUrl } from '@/utils/scriptUrlManager';
+import { useData } from '@/context/DataContext';
+import AuthLayout from '@/components/AuthLayout';
 
 export default function Settings() {
   const [scriptUrl, setScriptUrl] = useState('');
@@ -14,6 +16,7 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
+  const { lastFetched, refreshData } = useData();
 
   useEffect(() => {
     // Load saved URL from localStorage on component mount
@@ -86,6 +89,9 @@ export default function Settings() {
           text: user ? 'Settings saved successfully! Your settings will sync across all your devices.' : 'Settings saved successfully! Google Apps Script connection is working.' 
         });
         
+        // Refresh data after successfully updating the script URL
+        refreshData();
+        
       } catch (fetchError) {
         console.error("Fetch error:", fetchError);
         throw new Error(`Connection error: ${fetchError.message}`);
@@ -102,9 +108,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <Navbar />
-      
+    <AuthLayout>
       <div className="container mx-auto px-4 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 max-w-2xl mx-auto">
           <h1 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Settings</h1>
@@ -156,6 +160,14 @@ export default function Settings() {
             </div>
           </form>
           
+          <div className="mt-6">
+            {lastFetched && (
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
+                Last updated: {new Date(lastFetched).toLocaleString()}
+              </div>
+            )}
+          </div>
+          
           <div className="mt-10 border-t border-gray-200 dark:border-gray-700 pt-6">
             <h2 className="text-lg font-medium text-gray-800 dark:text-white mb-4">Help</h2>
             <div className="prose dark:prose-invert max-w-none">
@@ -180,6 +192,6 @@ export default function Settings() {
           </div>
         </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 }
