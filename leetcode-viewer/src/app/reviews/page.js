@@ -3,222 +3,30 @@
 import { useState, useEffect } from 'react';
 import AuthLayout from '@/components/AuthLayout';
 import Link from 'next/link';
-import { fetchDueReviews, completeReview } from '@/utils/reviewService';
+import { completeReview } from '@/utils/reviewService';
 import { useData } from '@/context/DataContext';
 
-// Cache duration in milliseconds (5 minutes)
-const CACHE_DURATION = 5 * 60 * 1000;
-const REVIEWS_CACHE_KEY = 'leetcode_reviews_cache';
-
 export default function ReviewsPage() {
-  const { problems, loading, error, refreshData, lastFetched } = useData();
+  const { 
+    dueReviews, 
+    reviewsLoading, 
+    reviewsError, 
+    refreshReviews, 
+    refreshAllData, 
+    lastReviewsFetched,
+    globalSyncId
+  } = useData();
+  
   const [activeReview, setActiveReview] = useState(null);
   const [completed, setCompleted] = useState([]);
-  const [dueReviews, setDueReviews] = useState([]);
-  const [loadingReviews, setLoadingReviews] = useState(true);
-  const [reviewError, setReviewError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  const [lastGlobalFetch, setLastGlobalFetch] = useState(null);
 
-  // Update when global data changes (dashboard/problems/settings sync)
+  // Update the timestamp when reviews data changes
   useEffect(() => {
-    // Skip first run or when lastFetched hasn't changed
-    if (lastGlobalFetch === lastFetched || !lastFetched) {
-      setLastGlobalFetch(lastFetched);
-      return;
+    if (lastReviewsFetched) {
+      setLastUpdated(new Date(lastReviewsFetched).toLocaleString());
     }
-
-    // If global data was refreshed, refresh reviews too
-    if (lastFetched && lastFetched !== lastGlobalFetch) {
-      console.log('Global data refreshed, syncing review data...');
-      refreshReviews();
-      setLastGlobalFetch(lastFetched);
-    }
-  }, [lastFetched, lastGlobalFetch]);
-
-  // Load reviews with cache-first strategy
-  useEffect(() => {
-    async function loadReviews() {
-      try {
-        setLoadingReviews(true);
-        
-        // Try to get data from cache first
-        const cachedData = getCachedReviewsData();
-        
-        if (cachedData) {
-          // Use cached data if available
-          setDueReviews(cachedData.reviews);
-          setLastUpdated(cachedData.timestamp);
-          setReviewError(null);
-          setLoadingReviews(false);
-          setInitialLoadComplete(true);
-          
-          // If cache is not stale, we can stop here
-          if (!isCacheStale(cachedData.timestamp)) {
-            return;
-          }
-          
-          // If cache is stale, we'll refresh in the background
-          setLoadingReviews(true);
-        }
-        
-        // Fetch fresh data
-        const reviews = await fetchDueReviews();
-        const timestamp = new Date().toLocaleString();
-        
-        // Update state
-        setDueReviews(reviews);
-        setLastUpdated(timestamp);
-        setReviewError(null);
-        
-        // Cache the data
-        cacheReviewsData(reviews, timestamp);
-      } catch (err) {
-        // If we have cached data, keep using it even if refresh fails
-        const cachedData = getCachedReviewsData();
-        if (cachedData && !initialLoadComplete) {
-          setDueReviews(cachedData.reviews);
-          setLastUpdated(cachedData.timestamp);
-          setReviewError('Failed to refresh reviews, showing cached data.');
-        } else {
-          setReviewError('Failed to load reviews. Please try again later.');
-        }
-        console.error(err);
-      } finally {
-        setLoadingReviews(false);
-        setInitialLoadComplete(true);
-      }
-    }
-    
-    loadReviews();
-    
-    // Handle tab visibility changes for efficient refreshing
-    function handleVisibilityChange() {
-      if (document.visibilityState === 'visible') {
-        const cachedData = getCachedReviewsData();
-        if (!cachedData || isCacheStale(cachedData.timestamp)) {
-          loadReviews();
-        }
-      }
-    }
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [initialLoadComplete]);
-
-  // Function to check if cache is stale
-  function isCacheStale(timestamp) {
-    if (!timestamp) return true;
-    const cachedTime = new Date(timestamp).getTime();
-    const currentTime = new Date().getTime();
-    return (currentTime - cachedTime) > CACHE_DURATION;
-  }
-
-  // Function to get cached reviews data
-  function getCachedReviewsData() {
-    if (typeof window === 'undefined') return null;
-    try {
-      const cachedData = localStorage.getItem(REVIEWS_CACHE_KEY);
-      if (cachedData) {
-        return JSON.parse(cachedData);
-      }
-    } catch (err) {
-      console.error('Error retrieving cache:', err);
-    }
-    return null;
-  }
-
-  // Function to cache reviews data
-  function cacheReviewsData(reviews, timestamp) {
-    if (typeof window === 'undefined') return;
-    try {
-      const cacheData = {
-        reviews,
-        timestamp,
-        expiresAt: new Date().getTime() + CACHE_DURATION
-      };
-      localStorage.setItem(REVIEWS_CACHE_KEY, JSON.stringify(cacheData));
-    } catch (err) {
-      console.error('Error caching reviews data:', err);
-    }
-  }
-
-  // Function to refresh reviews data
-  const refreshReviews = async () => {
-    try {
-      setLoadingReviews(true);
-      
-      // Fetch fresh data
-      const reviews = await fetchDueReviews();
-      const timestamp = new Date().toLocaleString();
-      
-      // Update state
-      setDueReviews(reviews);
-      setLastUpdated(timestamp);
-      setReviewError(null);
-      
-      // Cache the data
-      cacheReviewsData(reviews, timestamp);
-    } catch (err) {
-      setReviewError('Failed to refresh reviews. Please try again later.');
-      console.error(err);
-    } finally {
-      setLoadingReviews(false);
-    }
-  };
-
-  const startReview = (problem) => {
-    setActiveReview(problem);
-  };
-
-  const handleReviewComplete = async (difficulty) => {
-    if (!activeReview) return;
-    
-    try {
-      await completeReview(activeReview, difficulty);
-      
-      // Update local state
-      const updatedReviews = dueReviews.filter(p => p.id !== activeReview.id);
-      const newCompleted = [...completed, activeReview.id];
-      const timestamp = new Date().toLocaleString();
-      
-      setCompleted(newCompleted);
-      setDueReviews(updatedReviews);
-      setActiveReview(null);
-      setLastUpdated(timestamp);
-      
-      // Update cache with new state
-      cacheReviewsData(updatedReviews, timestamp);
-      
-      // Refresh global data to ensure data consistency
-      refreshData();
-      
-      // Save completed state in sessionStorage to persist during tab switches
-      try {
-        const sessionCompleted = JSON.parse(sessionStorage.getItem('reviewsCompleted') || '[]');
-        sessionStorage.setItem('reviewsCompleted', JSON.stringify([...sessionCompleted, activeReview.id]));
-      } catch (err) {
-        console.error('Error saving completed reviews to session:', err);
-      }
-    } catch (err) {
-      setReviewError('Failed to complete review. Please try again.');
-      console.error(err);
-    }
-  };
-
-  const handleSkip = () => {
-    // Move current problem to the end of the queue
-    if (!activeReview) return;
-    const updatedReviews = [...dueReviews.filter(p => p.id !== activeReview.id), activeReview];
-    setDueReviews(updatedReviews);
-    setActiveReview(null);
-    
-    // Update cache with new state
-    cacheReviewsData(updatedReviews, lastUpdated);
-  };
+  }, [lastReviewsFetched]);
 
   // Load completed reviews from sessionStorage on mount
   useEffect(() => {
@@ -232,10 +40,45 @@ export default function ReviewsPage() {
     }
   }, []);
 
-  // Combined loading state from both problems and reviews
-  const isLoading = loading || (loadingReviews && dueReviews.length === 0 && !initialLoadComplete);
+  const startReview = (problem) => {
+    setActiveReview(problem);
+  };
 
-  if (isLoading) {
+  const handleReviewComplete = async (difficulty) => {
+    if (!activeReview) return;
+    
+    try {
+      await completeReview(activeReview, difficulty);
+      
+      // Update local completed state
+      const newCompleted = [...completed, activeReview.id];
+      setCompleted(newCompleted);
+      setActiveReview(null);
+      
+      // Save completed state in sessionStorage
+      try {
+        sessionStorage.setItem('reviewsCompleted', JSON.stringify(newCompleted));
+      } catch (err) {
+        console.error('Error saving completed reviews to session:', err);
+      }
+      
+      // Refresh all data to ensure consistency across tabs
+      refreshAllData();
+    } catch (err) {
+      console.error('Failed to complete review:', err);
+    }
+  };
+
+  const handleSkip = () => {
+    // Move to the next problem (component will re-render with updated dueReviews)
+    if (!activeReview) return;
+    setActiveReview(null);
+    
+    // Refresh reviews to get updated order
+    refreshReviews();
+  };
+
+  if (reviewsLoading && dueReviews.length === 0) {
     return (
       <AuthLayout>
         <div className="flex justify-center items-center min-h-[60vh]">
@@ -256,14 +99,14 @@ export default function ReviewsPage() {
             </p>
           </div>
           
-          {/* Refresh Button - similar to problems page */}
+          {/* Refresh Button */}
           <button
             onClick={refreshReviews}
-            disabled={loadingReviews}
+            disabled={reviewsLoading}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 dark:bg-green-700 dark:hover:bg-green-600"
             title="Refresh reviews"
           >
-            {loadingReviews ? (
+            {reviewsLoading ? (
               <>
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -282,11 +125,11 @@ export default function ReviewsPage() {
           </button>
         </div>
     
-        {(error || reviewError) && (
+        {reviewsError && (
           <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 mb-6">
             <div className="flex">
               <div className="ml-3">
-                <p className="text-sm text-red-700 dark:text-red-400">{error || reviewError}</p>
+                <p className="text-sm text-red-700 dark:text-red-400">{reviewsError}</p>
               </div>
             </div>
           </div>
@@ -343,7 +186,7 @@ export default function ReviewsPage() {
           </div>
         ) : (
           <>
-            {loadingReviews && dueReviews.length > 0 && (
+            {reviewsLoading && dueReviews.length > 0 && (
               <div className="mb-4 text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 <div className="animate-spin h-4 w-4 mr-2 border-t-2 border-b-2 border-green-500 dark:border-green-400 rounded-full"></div>
                 Refreshing...
@@ -445,7 +288,7 @@ export default function ReviewsPage() {
         
         {/* Add timestamp at the bottom */}
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
-          Last updated: {lastUpdated}
+          Last updated: {lastUpdated || "Never"}
         </div>
       </div>
     </AuthLayout>

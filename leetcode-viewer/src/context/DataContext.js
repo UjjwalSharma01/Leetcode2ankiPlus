@@ -2,6 +2,7 @@
 
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { fetchLeetCodeProblems, getProblemStats } from '@/utils/leetcodeData';
+import { fetchDueReviews } from '@/utils/reviewService';
 import { useAuth } from './AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -11,13 +12,18 @@ const DataContext = createContext();
 // Provider component
 export function DataProvider({ children }) {
   const [problems, setProblems] = useState([]);
+  const [dueReviews, setDueReviews] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(false);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [reviewsError, setReviewsError] = useState(null);
   const [lastFetched, setLastFetched] = useState(null);
+  const [lastReviewsFetched, setLastReviewsFetched] = useState(null);
   const [needsScriptUrl, setNeedsScriptUrl] = useState(false);
   const [syncInProgress, setSyncInProgress] = useState(true); // Assume sync is in progress initially
   const [syncTimeout, setSyncTimeout] = useState(null);
+  const [globalSyncId, setGlobalSyncId] = useState(Date.now()); // Used to track global sync events
   
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -49,7 +55,14 @@ export function DataProvider({ children }) {
         setNeedsScriptUrl(false);
         setProblems(Array.isArray(data) ? data : []);
         setStats(getProblemStats(Array.isArray(data) ? data : []));
-        setLastFetched(new Date().toISOString());
+        const timestamp = new Date().toISOString();
+        setLastFetched(timestamp);
+        
+        // Update global sync ID to trigger updates across all components
+        setGlobalSyncId(Date.now());
+        
+        // Also update reviews when problems are updated
+        loadReviews(force);
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -58,6 +71,35 @@ export function DataProvider({ children }) {
       setLoading(false);
     }
   }, [user, problems.length, needsScriptUrl, syncInProgress]);
+
+  // Load reviews function that can be called manually
+  const loadReviews = useCallback(async (force = false) => {
+    // Don't try to fetch data if not authenticated
+    if (!user) return;
+    
+    // Skip fetching if data exists and force is false
+    if (dueReviews.length > 0 && !force && !needsScriptUrl) {
+      return;
+    }
+    
+    try {
+      setReviewsLoading(true);
+      setReviewsError(null);
+      
+      const reviews = await fetchDueReviews();
+      setDueReviews(Array.isArray(reviews) ? reviews : []);
+      const timestamp = new Date().toISOString();
+      setLastReviewsFetched(timestamp);
+      
+      // Update global sync ID to trigger updates across all components
+      setGlobalSyncId(Date.now());
+    } catch (err) {
+      console.error('Error fetching review data:', err);
+      setReviewsError('Failed to load reviews. Please check your connection and try again.');
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, [user, dueReviews.length, needsScriptUrl]);
 
   // Set up a sync timeout to stop waiting after a reasonable time
   useEffect(() => {
@@ -82,8 +124,9 @@ export function DataProvider({ children }) {
     // Only attempt to load data when auth state is settled and user is logged in
     if (!authLoading && user) {
       loadData();
+      loadReviews();
     }
-  }, [user, authLoading, loadData]);
+  }, [user, authLoading, loadData, loadReviews]);
 
   // Listen for script URL sync events
   useEffect(() => {
@@ -94,7 +137,12 @@ export function DataProvider({ children }) {
       setSyncInProgress(false);
       if (syncTimeout) clearTimeout(syncTimeout);
       
-      loadData(true); // Force refresh data when script URL is updated
+      // Update global sync ID to trigger updates across all components
+      setGlobalSyncId(Date.now());
+      
+      // Force refresh all data when script URL is updated
+      loadData(true);
+      loadReviews(true);
     };
 
     if (typeof window !== 'undefined') {
@@ -106,7 +154,41 @@ export function DataProvider({ children }) {
         window.removeEventListener('scriptUrlSynced', handleScriptUrlSync);
       }
     };
-  }, [loadData, syncTimeout]);
+  }, [loadData, loadReviews, syncTimeout]);
+
+  // Handle visibility changes (tab switching)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Check if data is stale when tab becomes visible
+        const currentTime = new Date();
+        const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
+        
+        // Check problems data staleness
+        const problemsDataIsStale = !lastFetched || 
+          (new Date(currentTime) - new Date(lastFetched) > fiveMinutes);
+        
+        // Check reviews data staleness
+        const reviewsDataIsStale = !lastReviewsFetched || 
+          (new Date(currentTime) - new Date(lastReviewsFetched) > fiveMinutes);
+        
+        if (problemsDataIsStale) {
+          console.log('Problems data is stale, refreshing...');
+          loadData(true);
+        }
+        
+        if (reviewsDataIsStale) {
+          console.log('Reviews data is stale, refreshing...');
+          loadReviews(true);
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loadData, loadReviews, lastFetched, lastReviewsFetched]);
 
   // Redirect to settings page if script URL is needed
   useEffect(() => {
@@ -126,20 +208,45 @@ export function DataProvider({ children }) {
     }
   }, [needsScriptUrl, syncInProgress, loading, authLoading, user, router]);
 
-  // Refresh function for manual data reloading
-  const refreshData = useCallback(() => loadData(true), [loadData]);
+  // Refresh functions for manual data reloading
+  const refreshData = useCallback(() => {
+    loadData(true);
+    // Update global sync ID to trigger updates across all components
+    setGlobalSyncId(Date.now());
+  }, [loadData]);
+  
+  const refreshReviews = useCallback(() => {
+    loadReviews(true);
+    // Update global sync ID to trigger updates across all components
+    setGlobalSyncId(Date.now());
+  }, [loadReviews]);
+
+  // Refresh both problem and review data at once
+  const refreshAllData = useCallback(() => {
+    loadData(true);
+    loadReviews(true);
+    // Update global sync ID to trigger updates across all components
+    setGlobalSyncId(Date.now());
+  }, [loadData, loadReviews]);
 
   // Context value
   const value = {
     problems,
+    dueReviews,
     stats,
-    loading: loading || (authLoading && !problems.length), // Show loading if auth is loading or data is loading
+    loading,
+    reviewsLoading,
     error,
+    reviewsError,
     refreshData,
+    refreshReviews,
+    refreshAllData,
     lastFetched,
+    lastReviewsFetched,
     isAuthenticated: !!user,
     needsScriptUrl,
-    syncInProgress
+    syncInProgress,
+    globalSyncId
   };
 
   return (
