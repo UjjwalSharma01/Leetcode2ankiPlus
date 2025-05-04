@@ -51,6 +51,24 @@ export function DataProvider({ children }) {
     }
   }, [user, authLoading, loadData]);
 
+  // Listen for script URL sync events
+  useEffect(() => {
+    const handleScriptUrlSync = (event) => {
+      console.log('Script URL synced from Firebase, auto-refreshing data');
+      loadData(true); // Force refresh data when script URL is updated
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('scriptUrlSynced', handleScriptUrlSync);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('scriptUrlSynced', handleScriptUrlSync);
+      }
+    };
+  }, [loadData]);
+
   // Refresh function for manual data reloading
   const refreshData = useCallback(() => loadData(true), [loadData]);
 

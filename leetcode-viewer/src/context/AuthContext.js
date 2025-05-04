@@ -8,7 +8,8 @@ import {
   createUserWithEmailAndPassword
 } from 'firebase/auth';
 import { auth } from '@/firebase/firebase';
-import { getScriptUrlFromFirebase } from '@/utils/scriptUrlManager';
+import { getScriptUrlFromFirebase, getScriptUrlFromStorage } from '@/utils/scriptUrlManager';
+import { fetchLeetCodeProblems } from '@/utils/leetcodeData';
 
 // Create auth context
 const AuthContext = createContext({});
@@ -43,7 +44,22 @@ export const AuthProvider = ({ children }) => {
         // Sync script URL from Firebase to localStorage when user logs in
         // This ensures consistent experience across devices
         try {
-          await getScriptUrlFromFirebase(user.uid);
+          const scriptUrl = await getScriptUrlFromFirebase(user.uid);
+          
+          // If we got a valid script URL and there's no data in local storage,
+          // trigger a data fetch automatically
+          if (scriptUrl && typeof window !== 'undefined') {
+            // We'll force a refresh by dispatching a custom event that DataContext can listen for
+            const event = new CustomEvent('scriptUrlSynced', { detail: { scriptUrl } });
+            window.dispatchEvent(event);
+            
+            // Directly try to fetch data as a fallback approach
+            try {
+              await fetchLeetCodeProblems();
+            } catch (error) {
+              console.error("Error auto-fetching problems after login:", error);
+            }
+          }
         } catch (error) {
           console.error("Error syncing script URL on login:", error);
         }
