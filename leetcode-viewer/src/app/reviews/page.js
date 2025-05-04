@@ -91,10 +91,10 @@ export default function ReviewsPage() {
   return (
     <AuthLayout>
       <div className="px-4 py-6">
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Scheduled Reviews</h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-4 sm:mb-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Scheduled Reviews</h1>
+            <p className="mt-1 sm:mt-2 text-gray-600 dark:text-gray-400">
               Review your LeetCode problems with spaced repetition
             </p>
           </div>
@@ -103,7 +103,7 @@ export default function ReviewsPage() {
           <button
             onClick={refreshReviews}
             disabled={reviewsLoading}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 dark:bg-green-700 dark:hover:bg-green-600"
+            className="self-start sm:self-auto inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 dark:bg-green-700 dark:hover:bg-green-600"
             title="Refresh reviews"
           >
             {reviewsLoading ? (
@@ -136,18 +136,20 @@ export default function ReviewsPage() {
         )}
     
         {activeReview ? (
-          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">{activeReview.title}</h2>
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100 break-words">{activeReview.title}</h2>
             <div className="mb-4">
-              <p className="text-gray-700 dark:text-gray-300">Problem #{activeReview.id}</p>
-              <p className="text-gray-700 dark:text-gray-300">Review #{activeReview.reviewCount + 1}</p>
+              <div className="flex flex-wrap gap-y-1">
+                <p className="text-gray-700 dark:text-gray-300 w-full sm:w-auto sm:mr-4">Problem #{activeReview.id}</p>
+                <p className="text-gray-700 dark:text-gray-300">Review #{activeReview.reviewCount + 1}</p>
+              </div>
               {activeReview.details && activeReview.details.URL && (
-                <div className="mt-2">
+                <div className="mt-3 sm:mt-2">
                   <a 
                     href={activeReview.details.URL} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 break-words"
                   >
                     View Problem on LeetCode
                   </a>
@@ -159,25 +161,25 @@ export default function ReviewsPage() {
               <div className="flex flex-wrap gap-2">
                 <button 
                   onClick={() => handleReviewComplete('easy')} 
-                  className="px-4 py-3 sm:py-2 bg-green-500 hover:bg-green-600 text-white dark:bg-green-600 dark:hover:bg-green-500 rounded transition-colors w-full sm:w-auto"
+                  className="px-4 py-3 sm:py-2 bg-green-500 hover:bg-green-600 text-white dark:bg-green-600 dark:hover:bg-green-500 rounded transition-colors w-full sm:w-auto min-h-[44px]"
                 >
                   Easy
                 </button>
                 <button 
                   onClick={() => handleReviewComplete('medium')} 
-                  className="px-4 py-3 sm:py-2 bg-yellow-500 hover:bg-yellow-600 text-white dark:bg-yellow-600 dark:hover:bg-yellow-500 rounded transition-colors w-full sm:w-auto"
+                  className="px-4 py-3 sm:py-2 bg-yellow-500 hover:bg-yellow-600 text-white dark:bg-yellow-600 dark:hover:bg-yellow-500 rounded transition-colors w-full sm:w-auto min-h-[44px]"
                 >
                   Medium
                 </button>
                 <button 
                   onClick={() => handleReviewComplete('hard')} 
-                  className="px-4 py-3 sm:py-2 bg-red-500 hover:bg-red-600 text-white dark:bg-red-600 dark:hover:bg-red-500 rounded transition-colors w-full sm:w-auto"
+                  className="px-4 py-3 sm:py-2 bg-red-500 hover:bg-red-600 text-white dark:bg-red-600 dark:hover:bg-red-500 rounded transition-colors w-full sm:w-auto min-h-[44px]"
                 >
                   Hard
                 </button>
                 <button 
                   onClick={handleSkip} 
-                  className="px-4 py-3 sm:py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded transition-colors w-full sm:w-auto"
+                  className="px-4 py-3 sm:py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded transition-colors w-full sm:w-auto min-h-[44px]"
                 >
                   Skip
                 </button>
@@ -194,22 +196,24 @@ export default function ReviewsPage() {
             )}
           
             {dueReviews.length > 0 ? (
-              <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
+              <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6 mb-6">
                 <h2 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">Due for Review ({dueReviews.length})</h2>
                 
                 {/* Mobile view - card layout */}
                 <div className="sm:hidden space-y-4">
                   {dueReviews.map(problem => (
                     <div key={problem.id} className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-md">
-                      <div className="font-medium text-gray-900 dark:text-gray-100">
+                      <div className="font-medium text-gray-900 dark:text-gray-100 break-words">
                         {problem.title}
                       </div>
-                      <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Problem #{problem.id} • Review #{problem.reviewCount}
+                      <div className="mt-1 text-sm text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-2">
+                        <span>Problem #{problem.id}</span>
+                        <span>•</span>
+                        <span>Review #{problem.reviewCount}</span>
                       </div>
                       <button 
                         onClick={() => startReview(problem)}
-                        className="mt-2 w-full py-2 bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-400 rounded-md text-center text-sm font-medium transition-colors"
+                        className="mt-3 w-full py-3 bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-400 rounded-md text-center text-sm font-medium transition-colors min-h-[44px]"
                       >
                         Start Review
                       </button>
@@ -249,17 +253,17 @@ export default function ReviewsPage() {
                 </div>
               </div>
             ) : (
-              <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-                <div className="text-center py-12">
+              <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6">
+                <div className="text-center py-8 sm:py-12">
                   <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <h2 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">No Reviews Due</h2>
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 px-4">
                     There are no problems scheduled for review at this time.
                   </p>
                   <div className="mt-6">
-                    <Link href="/problems" className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 transition-colors">
+                    <Link href="/problems" className="inline-flex items-center px-4 py-3 sm:py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 transition-colors min-h-[44px]">
                       View All Problems
                     </Link>
                   </div>
