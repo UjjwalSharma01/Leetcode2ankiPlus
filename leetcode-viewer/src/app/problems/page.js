@@ -270,6 +270,9 @@ export default function ProblemsPage() {
                         Tags
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Remarks
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Date Added
                       </th>
                     </tr>
@@ -302,6 +305,11 @@ export default function ProblemsPage() {
                             ))}
                           </div>
                         </td>
+                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                          <div className="max-w-xs md:max-w-sm break-words">
+                            {problem.Remarks ? problem.Remarks : '—'}
+                          </div>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                           {new Date(problem.Timestamp).toLocaleDateString()}
                         </td>
@@ -309,7 +317,7 @@ export default function ProblemsPage() {
                     ))}
                     {sortedProblems.length === 0 && (
                       <tr>
-                        <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                        <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                           No problems found matching your filters
                         </td>
                       </tr>
