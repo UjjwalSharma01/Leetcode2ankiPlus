@@ -7,8 +7,14 @@ import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import gsap from 'gsap';
-import Lottie from 'react-lottie';
+import dynamic from 'next/dynamic';
 import * as animationDataImport from './coding-animation.json';
+
+// Dynamically import Lottie with no SSR to prevent "document is not defined" errors
+const Lottie = dynamic(() => import('react-lottie'), {
+  ssr: false,
+  loading: () => <p>Loading...</p>
+});
 
 // Animated code particles component with proper mobile handling
 const CodeParticle = ({ delay }) => {
@@ -135,18 +141,20 @@ export default function LandingPage() {
   
   // Check if device is mobile
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    
-    // Set initial value
-    handleResize();
-    
-    // Add event listener
-    window.addEventListener('resize', handleResize);
-    
-    // Cleanup
-    return () => window.removeEventListener('resize', handleResize);
+    if (typeof window !== 'undefined') {
+      const handleResize = () => {
+        setIsMobile(window.innerWidth < 640);
+      };
+      
+      // Set initial value
+      handleResize();
+      
+      // Add event listener
+      window.addEventListener('resize', handleResize);
+      
+      // Cleanup
+      return () => window.removeEventListener('resize', handleResize);
+    }
   }, []);
   
   // Generate code particles - fewer on mobile for performance
@@ -162,7 +170,7 @@ export default function LandingPage() {
   // GSAP animations - with better cleanup and delayed execution
   useEffect(() => {
     // Only run GSAP animations after component is mounted and visible
-    if (!isMounted) return;
+    if (!isMounted || typeof window === 'undefined') return;
     
     let animations = [];
     
@@ -310,7 +318,7 @@ export default function LandingPage() {
                       <span className="text-blue-400">/&gt;</span>
                     </p>
                     <div className="absolute inset-0 opacity-20">
-                      {isMounted && animationData && (
+                      {isMounted && typeof window !== 'undefined' && animationData && (
                         <div className="lottie-container">
                           <Lottie 
                             options={defaultOptions} 
