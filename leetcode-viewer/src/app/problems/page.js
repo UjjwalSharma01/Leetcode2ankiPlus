@@ -157,7 +157,7 @@ export default function ProblemsPage() {
                       type="text"
                       name="search"
                       id="search"
-                      className="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                      className="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full py-2 pl-3 pr-10 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md h-10"
                       placeholder="Search by title or ID"
                       value={filters.searchTerm}
                       onChange={handleSearchChange}
@@ -173,7 +173,7 @@ export default function ProblemsPage() {
                   <select
                     id="difficulty"
                     name="difficulty"
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md"
+                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md h-10"
                     value={filters.difficulty}
                     onChange={handleDifficultyChange}
                   >
@@ -193,7 +193,7 @@ export default function ProblemsPage() {
                     <select
                       id="sort"
                       name="sort"
-                      className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-l-md"
+                      className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-l-md h-10"
                       value={sortBy}
                       onChange={handleSortChange}
                     >
@@ -204,7 +204,7 @@ export default function ProblemsPage() {
                     </select>
                     <button
                       type="button"
-                      className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm text-sm leading-4 font-medium rounded-r-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800"
+                      className="inline-flex items-center justify-center px-3 border border-l-0 border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm text-sm leading-4 font-medium rounded-r-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 h-10"
                       onClick={handleSortDirectionChange}
                     >
                       {sortDirection === 'asc' ? (
