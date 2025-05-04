@@ -100,7 +100,7 @@ export default function Login() {
           
           <div className="mt-6 flex justify-center">
             <a 
-              href="https://github.com/UjjwalSharma01/leetcode2anki-plus" 
+              href="https://github.com/UjjwalSharma01/Leetcode2ankiPlus" 
               target="_blank"
               rel="noopener noreferrer" 
               className="inline-flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-sm"

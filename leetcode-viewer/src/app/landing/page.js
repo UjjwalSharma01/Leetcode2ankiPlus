@@ -50,7 +50,7 @@ export default function LandingPage() {
             
             <div className="mt-6 flex justify-center">
               <a 
-                href="https://github.com/UjjwalSharma01/leetcode2anki-plus" 
+                href="https://github.com/UjjwalSharma01/Leetcode2ankiPlus" 
                 target="_blank"
                 rel="noopener noreferrer" 
                 className="inline-flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -146,7 +146,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center space-x-6">
             <a 
-              href="https://github.com/UjjwalSharma01/leetcode2anki-plus" 
+              href="https://github.com/UjjwalSharma01/Leetcode2ankiPlus" 
               target="_blank"
               rel="noopener noreferrer" 
               className="text-gray-400 hover:text-gray-500 dark:text-gray-400 dark:hover:text-gray-300"

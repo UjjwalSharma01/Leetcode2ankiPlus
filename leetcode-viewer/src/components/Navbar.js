@@ -54,7 +54,7 @@ export default function Navbar() {
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             <a 
-              href="https://github.com/UjjwalSharma01/leetcode2anki-plus" 
+              href="https://github.com/UjjwalSharma01/Leetcode2ankiPlus" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-white mr-4 hover:text-green-200 dark:hover:text-gray-300"
@@ -124,7 +124,7 @@ export default function Navbar() {
             </Link>
           ))}
           <a 
-            href="https://github.com/UjjwalSharma01/leetcode2anki-plus" 
+            href="https://github.com/UjjwalSharma01/Leetcode2ankiPlus" 
             target="_blank" 
             rel="noopener noreferrer"
             className="text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-green-700 dark:hover:bg-gray-700"

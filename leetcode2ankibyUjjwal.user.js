@@ -3,8 +3,8 @@
 // @namespace       https://github.com/UjjwalSharma01
 // @version         1.0.0
 // @description     Add solved problems to Anki and Google Sheets for tracking progress. Enhanced from LeetCode2Anki.
-// @homepageURL     https://github.com/UjjwalSharma01/leetcode2anki-plus
-// @supportURL      https://github.com/UjjwalSharma01/leetcode2anki-plus/issues
+// @homepageURL     https://github.com/UjjwalSharma01/Leetcode2ankiPlus
+// @supportURL      https://github.com/UjjwalSharma01/Leetcode2ankiPlus/issues
 // @author          Ujjwal Sharma
 // @match           https://leetcode.com/problems/*
 // @grant           GM.xmlHttpRequest
