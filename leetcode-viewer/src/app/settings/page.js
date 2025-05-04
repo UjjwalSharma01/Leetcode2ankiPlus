@@ -161,14 +161,14 @@ export default function Settings() {
                   as a web app in Google Apps Script.
                 </li>
                 <li>
-                  Set the script to be accessible to "Anyone, even anonymous".
+                  Set the script to be accessible to &quot;Anyone, even anonymous&quot;.
                 </li>
                 <li>
                   Copy the deployed web app URL and paste it here.
                 </li>
               </ol>
               <p className="mt-4">
-                When you click "Save Settings", the app will test the connection to 
+                When you click &quot;Save Settings&quot;, the app will test the connection to 
                 make sure it can access your Google Sheet data.
               </p>
             </div>
