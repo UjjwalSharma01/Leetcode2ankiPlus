@@ -144,11 +144,11 @@ export default function ProblemsPage() {
           </div>
         ) : (
           <>
-            {/* Filters and Search */}
-            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-                {/* Search */}
-                <div>
+            {/* Filters and Search - Responsive redesign */}
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6 mb-6">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {/* Search - Full width on mobile */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-1">
                   <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Search
                   </label>
@@ -157,7 +157,7 @@ export default function ProblemsPage() {
                       type="text"
                       name="search"
                       id="search"
-                      className="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full py-2 pl-3 pr-10 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md h-10"
+                      className="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full py-3 sm:py-2 pl-3 pr-10 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md min-h-[44px]"
                       placeholder="Search by title or ID"
                       value={filters.searchTerm}
                       onChange={handleSearchChange}
@@ -173,7 +173,7 @@ export default function ProblemsPage() {
                   <select
                     id="difficulty"
                     name="difficulty"
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md h-10"
+                    className="mt-1 block w-full pl-3 pr-10 py-3 sm:py-2 text-base sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 rounded-md min-h-[44px]"
                     value={filters.difficulty}
                     onChange={handleDifficultyChange}
                   >
@@ -193,7 +193,7 @@ export default function ProblemsPage() {
                     <select
                       id="sort"
                       name="sort"
-                      className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-l-md h-10"
+                      className="block w-full pl-3 pr-10 py-3 sm:py-2 text-base sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 rounded-l-md min-h-[44px]"
                       value={sortBy}
                       onChange={handleSortChange}
                     >
@@ -204,7 +204,7 @@ export default function ProblemsPage() {
                     </select>
                     <button
                       type="button"
-                      className="inline-flex items-center justify-center px-3 border border-l-0 border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm text-sm leading-4 font-medium rounded-r-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 h-10"
+                      className="inline-flex items-center justify-center px-4 sm:px-3 border border-l-0 border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm text-sm leading-4 font-medium rounded-r-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 min-h-[44px]"
                       onClick={handleSortDirectionChange}
                     >
                       {sortDirection === 'asc' ? (
@@ -225,7 +225,7 @@ export default function ProblemsPage() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Results
                   </label>
-                  <div className="mt-1 flex h-10 items-center">
+                  <div className="mt-1 flex min-h-[44px] items-center">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       Showing <span className="font-medium text-gray-900 dark:text-white">{sortedProblems.length}</span> of{' '}
                       <span className="font-medium text-gray-900 dark:text-white">{problems.length}</span> problems
@@ -234,16 +234,33 @@ export default function ProblemsPage() {
                 </div>
               </div>
               
-              {/* Tags */}
+              {/* Tags - Collapsible on mobile */}
               <div className="mt-6">
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tags</h3>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Tags</h3>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const tagsSection = document.getElementById('tags-section');
+                      tagsSection.classList.toggle('hidden');
+                      tagsSection.classList.toggle('flex');
+                    }}
+                    className="md:hidden text-green-600 dark:text-green-400 text-sm flex items-center"
+                    aria-expanded="false"
+                  >
+                    <span className="mr-1">Toggle Tags</span>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+                <div id="tags-section" className="hidden md:flex flex-wrap gap-2 mt-2">
                   {allTags.map((tag) => (
                     <button
                       key={tag}
                       type="button"
                       onClick={() => handleTagToggle(tag)}
-                      className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium ${
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium min-h-[30px] ${
                         filters.tags.includes(tag)
                           ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
@@ -256,9 +273,10 @@ export default function ProblemsPage() {
               </div>
             </div>
             
-            {/* Problems Table */}
+            {/* Problems Table/Cards - Responsive design */}
             <div className="bg-white dark:bg-gray-800 shadow overflow-hidden rounded-lg">
-              <div className="overflow-x-auto">
+              {/* Desktop view - Traditional table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
@@ -329,6 +347,65 @@ export default function ProblemsPage() {
                     )}
                   </tbody>
                 </table>
+              </div>
+              
+              {/* Mobile view - Card layout */}
+              <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                {sortedProblems.map((problem, index) => (
+                  <div key={index} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white mr-2">#{problem.ID}</span>
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                          ${problem.Difficulty === 'Easy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                          problem.Difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
+                          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
+                          {problem.Difficulty}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(problem.Timestamp).toLocaleDateString()}
+                      </div>
+                    </div>
+                    
+                    <a 
+                      href={problem.URL} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-base font-medium text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 hover:underline block mb-2"
+                    >
+                      {problem.Title}
+                    </a>
+                    
+                    {problem.Tags && (
+                      <div className="mb-2">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tags:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {problem.Tags.split(',').map((tag, i) => (
+                            <span key={i} className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
+                              {tag.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {problem.Remarks && (
+                      <div className="mt-2">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Remarks:</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-300 break-words">
+                          {problem.Remarks}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {sortedProblems.length === 0 && (
+                  <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                    No problems found matching your filters
+                  </div>
+                )}
               </div>
             </div>
           </>

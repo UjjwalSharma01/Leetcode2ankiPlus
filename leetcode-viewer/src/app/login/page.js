@@ -33,10 +33,10 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h1 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
+          <h1 className="mt-6 text-center text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">
             LeetCode2AnkiPlus Tracker
           </h1>
-          <h2 className="mt-6 text-center text-xl text-gray-600 dark:text-gray-400">
+          <h2 className="mt-6 text-center text-lg sm:text-xl text-gray-600 dark:text-gray-400">
             Sign in to view your LeetCode problems
           </h2>
         </div>
@@ -48,9 +48,9 @@ export default function Login() {
         )}
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+          <div className="rounded-md shadow-sm space-y-4 sm:space-y-0 sm:-space-y-px">
             <div>
-              <label htmlFor="email-address" className="sr-only">Email address</label>
+              <label htmlFor="email-address" className="block sm:sr-only text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email address</label>
               <input
                 id="email-address"
                 name="email"
@@ -59,12 +59,12 @@ export default function Login() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-gray-800 rounded-t-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-md sm:rounded-none sm:rounded-t-md relative block w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-gray-800 focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 text-base sm:text-sm min-h-[44px]"
                 placeholder="Email address"
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">Password</label>
+              <label htmlFor="password" className="block sm:sr-only text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
               <input
                 id="password"
                 name="password"
@@ -73,7 +73,7 @@ export default function Login() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-gray-800 rounded-b-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-md sm:rounded-none sm:rounded-b-md relative block w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-gray-800 focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 text-base sm:text-sm min-h-[44px]"
                 placeholder="Password"
               />
             </div>
@@ -83,13 +83,13 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-900"
+              className="group relative w-full flex justify-center py-3 sm:py-2 px-4 border border-transparent text-base sm:text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-900 min-h-[44px]"
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
           
-          <div className="text-center text-sm">
+          <div className="text-center text-sm sm:text-base">
             <p className="text-gray-600 dark:text-gray-400">
               Don't have an account?{' '}
               <Link href="/signup" className="font-medium text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300">

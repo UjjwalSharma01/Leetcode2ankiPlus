@@ -11,7 +11,7 @@ const https = require('https');
 const http = require('http');
 
 // Replace with your actual Google Apps Script URL
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcKBQ-ZYneoPRxQHWVC-2RaarGpqlqGMJVe_DfVWkH7Meqk4JPXFKjfAfEj8Xf4hCF/exec';
+const SCRIPT_URL = 'ENTER_YOUR_SCRIPT_URL_HERE';
 
 // Simple fetch function for Node.js that follows redirects
 function fetch(url, redirectCount = 0) {

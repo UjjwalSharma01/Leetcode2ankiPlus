@@ -33,7 +33,7 @@ export default function Dashboard() {
     <AuthLayout>
       <div className="px-4 py-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">LeetCode Tracker Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">LeetCode Tracker Dashboard</h1>
           <p className="mt-2 text-gray-600 dark:text-gray-300">
             Track and review your LeetCode progress
           </p>
@@ -58,7 +58,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <>
-            {/* Stats Grid */}
+            {/* Stats Grid - Mobile-friendly grid */}
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
                 <div className="px-4 py-5 sm:p-6">
@@ -142,17 +142,17 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Problem Difficulty Distribution */}
+            {/* Problem Difficulty Distribution - Better spacing for mobile */}
             <div className="mt-8">
               <h2 className="text-lg font-medium text-gray-900 dark:text-white">Problem Difficulty Distribution</h2>
-              <div className="mt-4 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-                  <div className="text-center">
+              <div className="mt-4 bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6">
+                <div className="grid grid-cols-1 gap-6 sm:gap-5 sm:grid-cols-3">
+                  <div className="text-center py-2">
                     <div className="text-2xl font-bold text-green-500">
                       {stats.byDifficulty?.Easy || 0}
                     </div>
                     <div className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-400">Easy</div>
-                    <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="mt-2 h-3 sm:h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-green-500" 
                         style={{ width: `${stats.total ? (stats.byDifficulty?.Easy / stats.total * 100) : 0}%` }}
@@ -160,12 +160,12 @@ export default function Dashboard() {
                     </div>
                   </div>
                   
-                  <div className="text-center">
+                  <div className="text-center py-2">
                     <div className="text-2xl font-bold text-yellow-500">
                       {stats.byDifficulty?.Medium || 0}
                     </div>
                     <div className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-400">Medium</div>
-                    <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="mt-2 h-3 sm:h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-yellow-500" 
                         style={{ width: `${stats.total ? (stats.byDifficulty?.Medium / stats.total * 100) : 0}%` }}
@@ -173,12 +173,12 @@ export default function Dashboard() {
                     </div>
                   </div>
                   
-                  <div className="text-center">
+                  <div className="text-center py-2">
                     <div className="text-2xl font-bold text-red-500">
                       {stats.byDifficulty?.Hard || 0}
                     </div>
                     <div className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-400">Hard</div>
-                    <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="mt-2 h-3 sm:h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-red-500" 
                         style={{ width: `${stats.total ? (stats.byDifficulty?.Hard / stats.total * 100) : 0}%` }}
@@ -189,10 +189,12 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Recent Problems */}
+            {/* Recent Problems - Responsive table/card layout */}
             <div className="mt-8">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white">Recent Problems</h2>
-              <div className="mt-4 bg-white dark:bg-gray-800 shadow overflow-hidden rounded-lg">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Recent Problems</h2>
+              
+              {/* Desktop table view */}
+              <div className="hidden sm:block mt-4 bg-white dark:bg-gray-800 shadow overflow-hidden rounded-lg">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700">
@@ -250,6 +252,50 @@ export default function Dashboard() {
                     <Link href="/problems" className="font-medium text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300">
                       View all problems
                     </Link>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Mobile card view */}
+              <div className="sm:hidden">
+                <div className="bg-white dark:bg-gray-800 shadow overflow-hidden rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
+                  {problems.slice(0, 5).map((problem, index) => (
+                    <div key={index} className="p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white mr-2">#{problem.ID}</span>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(problem.Timestamp).toLocaleDateString()}
+                        </div>
+                      </div>
+                      
+                      <a 
+                        href={problem.URL} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-base font-medium text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 hover:underline block mb-2"
+                      >
+                        {problem.Title}
+                      </a>
+                      
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        ${problem.Difficulty === 'Easy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                         problem.Difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
+                         'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
+                        {problem.Difficulty}
+                      </span>
+                    </div>
+                  ))}
+                  {problems.length === 0 && (
+                    <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                      No problems found
+                    </div>
+                  )}
+                  <div className="bg-gray-50 dark:bg-gray-700 px-4 py-4">
+                    <div className="text-sm">
+                      <Link href="/problems" className="font-medium text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300">
+                        View all problems
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>

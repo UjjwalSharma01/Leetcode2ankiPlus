@@ -34,10 +34,21 @@ export default function AuthLayout({ children }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <Navbar />
-      <div className="flex-grow">
-        {children}
-      </div>
+      <header className="sticky top-0 z-10">
+        <Navbar />
+      </header>
+      <main className="flex-grow w-full max-w-full overflow-x-hidden">
+        <div className="mx-auto w-full max-w-7xl">
+          {children}
+        </div>
+      </main>
+      <footer className="bg-green-800 dark:bg-gray-800 text-white text-center py-4 text-sm">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <p className="text-white text-opacity-90">
+            © {new Date().getFullYear()} LeetCode2AnkiPlus | <a href="https://github.com/UjjwalSharma01/Leetcode2ankiPlus" className="text-white hover:text-green-200 dark:hover:text-gray-300 underline">GitHub</a>
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
