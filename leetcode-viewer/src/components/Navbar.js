@@ -28,14 +28,14 @@ export default function Navbar() {
   return (
     <nav className="bg-green-800 dark:bg-gray-800 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between h-16 items-center">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Link href="/">
                 <span className="text-white text-xl font-bold">LeetCode2AnkiPlus</span>
               </Link>
             </div>
-            <div className="hidden sm:ml-8 sm:flex sm:space-x-4">
+            <div className="hidden sm:ml-8 sm:flex sm:items-center sm:space-x-4">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
