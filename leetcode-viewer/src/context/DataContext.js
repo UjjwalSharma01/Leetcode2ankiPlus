@@ -328,17 +328,29 @@ export function DataProvider({ children }) {
         if (!reviewDate) return false;
         
         try {
-          const nextReview = new Date(reviewDate);
+          // Convert to Date object and handle date strings properly
+          const nextReview = reviewDate instanceof Date ? reviewDate : new Date(reviewDate);
+          if (isNaN(nextReview.getTime())) {
+            console.error("Invalid review date:", reviewDate);
+            return false;
+          }
+          
           nextReview.setHours(0, 0, 0, 0);
+          
+          // Make sure today's date has hours reset for accurate comparison
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
           return nextReview > today;
         } catch (e) {
           console.error("Error parsing date for review:", e);
           return false;
         }
       }).sort((a, b) => {
+        // Sort by date ascending
         const dateA = new Date(a['Next Review Date'] || a.nextReviewDate);
         const dateB = new Date(b['Next Review Date'] || b.nextReviewDate);
-        return dateA - dateB; // Sort ascending by date
+        return dateA - dateB;
       });
       
       console.log(`Found ${upcoming.length} upcoming reviews`);

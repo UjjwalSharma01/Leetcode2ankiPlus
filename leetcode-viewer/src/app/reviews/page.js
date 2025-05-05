@@ -110,7 +110,8 @@ export default function ReviewsPage() {
   const formatRelativeDate = (dateStr) => {
     if (!dateStr) return 'Unknown date';
     
-    const date = new Date(dateStr);
+    // Handle both string dates and Date objects
+    const date = dateStr instanceof Date ? dateStr : new Date(dateStr);
     if (isNaN(date.getTime())) {
       console.error("Invalid date string:", dateStr);
       return 'Invalid date';
@@ -128,7 +129,9 @@ export default function ReviewsPage() {
     const diffTime = date - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays === 1) {
+    if (diffDays === 0) {
+      return 'Today';
+    } else if (diffDays === 1) {
       return 'Tomorrow';
     } else if (diffDays === 2) {
       return 'Day after tomorrow';
