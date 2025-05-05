@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import AuthLayout from '@/components/AuthLayout';
 import Link from 'next/link';
 import { useData } from '@/context/DataContext';
+import { addProblemToReview } from '@/utils/reviewService';
+import { toast } from 'react-hot-toast'; // Import toast for notifications
+import BulkReviewActions from '@/components/BulkReviewActions';
 
 export default function ProblemsPage() {
   const { problems, loading, error, refreshData, lastFetched } = useData();
@@ -16,6 +19,9 @@ export default function ProblemsPage() {
   const [allTags, setAllTags] = useState([]);
   const [sortBy, setSortBy] = useState('date');
   const [sortDirection, setSortDirection] = useState('desc');
+  const [addingToReview, setAddingToReview] = useState({}); // Track which problems are being added to review
+  const [selectedProblems, setSelectedProblems] = useState({}); // Track selected problems for bulk operations
+  const [showBulkActions, setShowBulkActions] = useState(false); // Toggle for bulk operations panel
   
   // Extract all unique tags whenever problems change
   useEffect(() => {
@@ -57,6 +63,58 @@ export default function ProblemsPage() {
 
   const handleSortDirectionChange = () => {
     setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
+
+  // Get the array of selected problem IDs
+  const selectedProblemIds = Object.keys(selectedProblems).filter(id => selectedProblems[id]);
+
+  // Toggle selection of a single problem
+  const toggleProblemSelection = (problemId) => {
+    setSelectedProblems(prev => ({
+      ...prev,
+      [problemId]: !prev[problemId]
+    }));
+  };
+
+  // Toggle selection of all visible problems
+  const toggleSelectAll = () => {
+    if (selectedProblemIds.length === sortedProblems.length) {
+      // If all are selected, deselect all
+      setSelectedProblems({});
+    } else {
+      // Select all visible problems
+      const newSelected = {};
+      sortedProblems.forEach(problem => {
+        newSelected[problem.ID] = true;
+      });
+      setSelectedProblems(newSelected);
+    }
+  };
+
+  // Add function to handle adding problems to review
+  const handleAddToReview = async (problem) => {
+    setAddingToReview(prev => ({ ...prev, [problem.ID]: true }));
+    try {
+      const response = await addProblemToReview(
+        problem.ID, 
+        problem.Title, 
+        1, // Default to reviewing tomorrow
+        false // Don't update if exists
+      );
+      
+      if (response.success) {
+        toast.success(`Problem ${problem.ID} (${problem.Title}) added to review schedule!`);
+      } else if (response.exists) {
+        toast.error(`Problem ${problem.ID} already exists in review schedule.`);
+      } else {
+        toast.error(`Error: ${response.error}`);
+      }
+    } catch (error) {
+      console.error('Error adding problem to review:', error);
+      toast.error('Failed to add problem to review. Check console for details.');
+    } finally {
+      setAddingToReview(prev => ({ ...prev, [problem.ID]: false }));
+    }
   };
 
   const filteredProblems = problems.filter(problem => {
@@ -288,11 +346,59 @@ export default function ProblemsPage() {
             
             {/* Problems Table/Cards - Responsive design */}
             <div className="bg-white dark:bg-gray-800 shadow overflow-hidden rounded-lg">
+              {/* Bulk Actions Button */}
+              <div className="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <div className="flex items-center">
+                    <button
+                      onClick={toggleSelectAll}
+                      className={`mr-3 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium 
+                      ${selectedProblemIds.length > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                    >
+                      {selectedProblemIds.length === sortedProblems.length && sortedProblems.length > 0 
+                        ? 'Deselect All' 
+                        : 'Select All'}
+                    </button>
+                    {selectedProblemIds.length > 0 && (
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {selectedProblemIds.length} problem{selectedProblemIds.length === 1 ? '' : 's'} selected
+                      </span>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={() => setShowBulkActions(!showBulkActions)}
+                    className={`px-4 py-2 rounded-md border border-transparent text-sm font-medium shadow-sm
+                    ${showBulkActions 
+                      ? 'bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200' 
+                      : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                  >
+                    {showBulkActions ? 'Hide Bulk Actions' : 'Bulk Actions'}
+                  </button>
+                </div>
+                
+                {showBulkActions && (
+                  <div className="mt-4">
+                    <BulkReviewActions 
+                      problems={problems} 
+                      selectedIds={selectedProblemIds}
+                      onClose={() => {
+                        setShowBulkActions(false);
+                        setSelectedProblems({});
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              
               {/* Desktop view - Traditional table */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
+                      <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-10">
+                        <span className="sr-only">Select</span>
+                      </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         #
                       </th>
@@ -311,11 +417,22 @@ export default function ProblemsPage() {
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Date Added
                       </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {sortedProblems.map((problem, index) => (
                       <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-center">
+                          <input
+                            type="checkbox"
+                            checked={!!selectedProblems[problem.ID]}
+                            onChange={() => toggleProblemSelection(problem.ID)}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                           {problem.ID}
                         </td>
@@ -349,11 +466,20 @@ export default function ProblemsPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                           {new Date(problem.Timestamp).toLocaleDateString()}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                          <button
+                            onClick={() => handleAddToReview(problem)}
+                            disabled={addingToReview[problem.ID]}
+                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                          >
+                            {addingToReview[problem.ID] ? 'Adding...' : 'Add to Review'}
+                          </button>
+                        </td>
                       </tr>
                     ))}
                     {sortedProblems.length === 0 && (
                       <tr>
-                        <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                        <td colSpan="8" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                           No problems found matching your filters
                         </td>
                       </tr>
@@ -367,7 +493,15 @@ export default function ProblemsPage() {
                 {sortedProblems.map((problem, index) => (
                   <div key={index} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
                     <div className="flex justify-between items-start mb-2">
-                      <div>
+                      <div className="flex items-center">
+                        <div className="mr-2">
+                          <input
+                            type="checkbox"
+                            checked={!!selectedProblems[problem.ID]}
+                            onChange={() => toggleProblemSelection(problem.ID)}
+                            className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                        </div>
                         <span className="text-sm font-medium text-gray-900 dark:text-white mr-2">#{problem.ID}</span>
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
                           ${problem.Difficulty === 'Easy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
@@ -385,13 +519,13 @@ export default function ProblemsPage() {
                       href={problem.URL} 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      className="text-base font-medium text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 hover:underline block mb-2"
+                      className="text-base font-medium text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 hover:underline block mb-2 ml-7"
                     >
                       {problem.Title}
                     </a>
                     
                     {problem.Tags && (
-                      <div className="mb-2">
+                      <div className="mb-2 ml-7">
                         <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tags:</div>
                         <div className="flex flex-wrap gap-1">
                           {problem.Tags.split(',').map((tag, i) => (
@@ -404,13 +538,23 @@ export default function ProblemsPage() {
                     )}
                     
                     {problem.Remarks && (
-                      <div className="mt-2">
+                      <div className="mt-2 ml-7">
                         <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Remarks:</div>
                         <div className="text-sm text-gray-600 dark:text-gray-300 break-words">
                           {problem.Remarks}
                         </div>
                       </div>
                     )}
+
+                    <div className="mt-2 ml-7">
+                      <button
+                        onClick={() => handleAddToReview(problem)}
+                        disabled={addingToReview[problem.ID]}
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                      >
+                        {addingToReview[problem.ID] ? 'Adding...' : 'Add to Review'}
+                      </button>
+                    </div>
                   </div>
                 ))}
                 

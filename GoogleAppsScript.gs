@@ -32,58 +32,58 @@ function doRequest(request) {
  * Handles OPTIONS requests for CORS preflight
  */
 function doOptions(e) {
-  var lock = LockService.getScriptLock();
-  lock.tryLock(10000);
-  
-  // Create a response object compatible with CORS
-  const output = ContentService.createTextOutput(JSON.stringify({"status": "success"}));
-  output.setMimeType(ContentService.MimeType.JSON);
-  
-  // Add headers to the response manually via advanced service
-  const response = { 
-    status: "success", 
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
-      'Access-Control-Max-Age': '3600'
-    }
-  };
-  
-  // Return the content and let Apps Script handle the headers properly
-  return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
+  // Create a proper CORS response for preflight requests
+  // This uses the HtmlService which correctly handles headers
+  return HtmlService.createHtmlOutput('')
+    .addHeader('Access-Control-Allow-Origin', '*')
+    .addHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .addHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+    .addHeader('Access-Control-Max-Age', '3600');
 }
 
 /**
- * Handles GET requests - returns a simple status for testing
- * If action=getProblems is passed, returns all problems in the sheet
- * If action=getDueReviews is passed, returns problems due for review
+ * Main entry point for web requests
+ * This function delegates to the appropriate handler based on the HTTP method
  */
 function doGet(e) {
-  // Check if the request is for all problems
+  // Handle OPTIONS requests as well - this is needed because Google Apps Script doesn't properly support OPTIONS
+  // This workaround detects if X-HTTP-Method-Override is set to OPTIONS
+  const headers = {};
+  if (e && e.parameter && e.parameter['X-HTTP-Method-Override'] === 'OPTIONS') {
+    return handleOptionsRequest();
+  }
+  
+  // Normal GET request handling
   if (e && e.parameter && e.parameter.action === 'getProblems') {
     return getAllProblems();
   }
   
-  // Check if the request is for due reviews
   if (e && e.parameter && e.parameter.action === 'getDueReviews') {
     return getDueReviews();
   }
   
-  // Create a response with necessary CORS headers included in the JSON
+  // Create a response with necessary CORS headers
   const response = {
     "status": "online", 
-    "message": "Google Sheets API is running",
-    "headers": {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
-      'Access-Control-Max-Age': '3600'
-    }
+    "message": "Google Sheets API is running"
   };
   
-  return ContentService.createTextOutput(JSON.stringify(response))
-    .setMimeType(ContentService.MimeType.JSON);
+  return createJsonResponse(response);
+}
+
+/**
+ * Handle OPTIONS requests (for CORS preflight)
+ * This is a workaround for Google Apps Script's limited OPTIONS support
+ */
+function handleOptionsRequest() {
+  const output = ContentService.createTextOutput(JSON.stringify({
+    status: "success",
+    message: "CORS preflight handled"
+  }));
+  
+  output.setMimeType(ContentService.MimeType.JSON);
+  
+  return output;
 }
 
 /**
@@ -100,17 +100,9 @@ function getAllProblems() {
       // No data or only headers
       const response = {
         "success": true,
-        "problems": [],
-        "headers": {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-          'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
-          'Access-Control-Max-Age': '3600'
-        }
+        "problems": []
       };
-      return ContentService
-        .createTextOutput(JSON.stringify(response))
-        .setMimeType(ContentService.MimeType.JSON);
+      return createJsonResponse(response);
     }
     
     const headerRow = data[0];
@@ -130,36 +122,19 @@ function getAllProblems() {
       problems.push(problem);
     }
     
-    // Include CORS headers in the response object
     const response = {
       "success": true,
-      "problems": problems,
-      "headers": {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
-        'Access-Control-Max-Age': '3600'
-      }
+      "problems": problems
     };
     
-    return ContentService
-      .createTextOutput(JSON.stringify(response))
-      .setMimeType(ContentService.MimeType.JSON);
+    return createJsonResponse(response);
   } catch (error) {
     const errorResponse = {
       "success": false,
-      "error": error.toString(),
-      "headers": {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
-        'Access-Control-Max-Age': '3600'
-      }
+      "error": error.toString()
     };
     
-    return ContentService
-      .createTextOutput(JSON.stringify(errorResponse))
-      .setMimeType(ContentService.MimeType.JSON);
+    return createJsonResponse(errorResponse);
   }
 }
 
@@ -253,6 +228,16 @@ function doPost(e) {
       return completeReview(data);
     }
     
+    // Handle adding problem to review schedule
+    if (data.action === 'addToReview') {
+      return addProblemToReview(data);
+    }
+
+    // Handle bulk adding problems to review schedule
+    if (data.action === 'bulkAddToReview') {
+      return bulkAddToReview(data);
+    }
+    
     // Use the centralized spreadsheet ID variable
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
     
@@ -260,18 +245,10 @@ function doPost(e) {
     if (!data.id || !data.title) {
       const errorResponse = {
         "error": "Missing required fields",
-        "result": "error",
-        "headers": {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-          'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
-          'Access-Control-Max-Age': '3600'
-        }
+        "result": "error"
       };
       
-      return ContentService
-        .createTextOutput(JSON.stringify(errorResponse))
-        .setMimeType(ContentService.MimeType.JSON);
+      return createJsonResponse(errorResponse);
     }
     
     // Check if this problem already exists in the sheet
@@ -300,35 +277,390 @@ function doPost(e) {
     const successResponse = {
       "result": "success",
       "message": statusMessage,
-      "wasUpdated": !!(existingEntry && data.update !== false),
-      "headers": {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
-        'Access-Control-Max-Age': '3600'
-      }
+      "wasUpdated": !!(existingEntry && data.update !== false)
     };
     
-    return ContentService
-      .createTextOutput(JSON.stringify(successResponse))
-      .setMimeType(ContentService.MimeType.JSON);
+    return createJsonResponse(successResponse);
       
   } catch (error) {
     const errorResponse = {
       "error": error.toString(),
       "result": "error",
-      "stack": error.stack,
-      "headers": {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
-        'Access-Control-Max-Age': '3600'
-      }
+      "stack": error.stack
     };
     
-    return ContentService
-      .createTextOutput(JSON.stringify(errorResponse))
-      .setMimeType(ContentService.MimeType.JSON);
+    return createJsonResponse(errorResponse);
+  }
+}
+
+/**
+ * Adds a problem to the review schedule
+ */
+function addProblemToReview(data) {
+  try {
+    // Validate required data
+    if (!data.id) {
+      return createJsonResponse({
+        "success": false,
+        "error": "Problem ID is required"
+      });
+    }
+    
+    // Get Revision Schedule sheet
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const revisionSheet = ss.getSheetByName("Revision Schedule");
+    
+    if (!revisionSheet) {
+      return createJsonResponse({
+        "success": false,
+        "error": "Revision Schedule sheet not found. Please set up SRS system first."
+      });
+    }
+    
+    // Calculate next review date
+    const daysUntilReview = parseInt(data.days) || 1;
+    if (isNaN(daysUntilReview) || daysUntilReview < 1) {
+      return createJsonResponse({
+        "success": false,
+        "error": "Days until review must be a positive number"
+      });
+    }
+    
+    const reviewDate = new Date();
+    reviewDate.setDate(reviewDate.getDate() + daysUntilReview);
+    
+    // Get the problem title (from data or lookup in main sheet)
+    let title = data.title || "";
+    if (!title) {
+      title = getProblemTitle(data.id);
+    }
+    
+    // Check if problem already exists in revision schedule
+    const existingProblem = findProblemInRevisionSchedule(revisionSheet, data.id);
+    
+    if (existingProblem) {
+      if (data.updateIfExists === true) {
+        // Update existing problem's review date
+        revisionSheet.getRange(existingProblem.rowIndex, 4, 1, 2).setValues([[
+          reviewDate,      // Next Review Date
+          daysUntilReview  // Interval (days)
+        ]]);
+        
+        return createJsonResponse({
+          "success": true,
+          "message": `Problem ${data.id} already exists in revision schedule. Updated review date.`,
+          "wasUpdated": true,
+          "nextReviewDate": reviewDate.toISOString()
+        });
+      } else {
+        return createJsonResponse({
+          "success": false,
+          "error": `Problem ${data.id} already exists in revision schedule.`,
+          "exists": true
+        });
+      }
+    }
+    
+    // Ensure revision sheet has headers
+    let hasHeaders = true;
+    if (revisionSheet.getLastRow() === 0) {
+      // Sheet is empty, add headers
+      revisionSheet.getRange(1, 1, 1, 7).setValues([[
+        "Problem ID", "Title", "Last Review Date", "Next Review Date", "Review Count", "Interval", "Status"
+      ]]);
+      revisionSheet.getRange("A1:G1").setFontWeight("bold");
+    }
+    
+    // Add new problem to revision schedule
+    const nextRow = revisionSheet.getLastRow() + 1;
+    revisionSheet.getRange(nextRow, 1, 1, 7).setValues([[
+      data.id,              // Problem ID
+      title,                // Title
+      new Date(),           // Last Review Date (today)
+      reviewDate,           // Next Review Date
+      0,                    // Review Count
+      daysUntilReview,      // Interval (days)
+      data.status || "Pending" // Status
+    ]]);
+    
+    return createJsonResponse({
+      "success": true,
+      "message": `Problem ${data.id} added to revision schedule for review in ${daysUntilReview} day(s).`,
+      "id": data.id,
+      "nextReviewDate": reviewDate.toISOString()
+    });
+  } catch (error) {
+    return createJsonResponse({
+      "success": false,
+      "error": error.toString()
+    });
+  }
+}
+
+/**
+ * Handles bulk adding problems to the review schedule
+ * Supports different types of bulk operations:
+ * - 'all': Add all problems not already in revision schedule
+ * - 'today': Add problems from today
+ * - 'selected': Add specific problems by IDs
+ */
+function bulkAddToReview(data) {
+  try {
+    // Validate bulk type
+    if (!data.bulkType) {
+      return createJsonResponse({
+        "success": false,
+        "error": "Bulk type is required (all, today, or selected)"
+      });
+    }
+    
+    // Get the spreadsheet
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    if (!ss) {
+      return createJsonResponse({
+        "success": false,
+        "error": "Could not open spreadsheet. Check if the SPREADSHEET_ID is correct."
+      });
+    }
+    
+    // Get main and revision sheets
+    const mainSheet = ss.getActiveSheet();
+    const revisionSheet = ss.getSheetByName("Revision Schedule");
+    
+    if (!revisionSheet) {
+      return createJsonResponse({
+        "success": false,
+        "error": "Revision Schedule sheet not found. Please set up SRS system first."
+      });
+    }
+    
+    // Ensure days parameter is valid
+    const daysUntilReview = parseInt(data.days) || 1;
+    if (isNaN(daysUntilReview) || daysUntilReview < 1) {
+      return createJsonResponse({
+        "success": false,
+        "error": "Days until review must be a positive number"
+      });
+    }
+    
+    // Calculate next review date
+    const reviewDate = new Date();
+    reviewDate.setDate(reviewDate.getDate() + daysUntilReview);
+    
+    // Get all problems from main sheet
+    const problemData = mainSheet.getDataRange().getValues();
+    
+    // Find the ID and title columns
+    const headers = problemData[0].map(header => String(header).trim().toLowerCase());
+    let idIndex = -1;
+    let titleIndex = -1;
+    let timestampIndex = -1;
+    
+    for (let i = 0; i < headers.length; i++) {
+      const header = headers[i].toLowerCase();
+      if (header === 'id') {
+        idIndex = i;
+      } else if (header === 'title') {
+        titleIndex = i;
+      } else if (header === 'timestamp' || header === 'date' || header === 'time') {
+        timestampIndex = i;
+      }
+    }
+    
+    if (idIndex === -1 || titleIndex === -1) {
+      return createJsonResponse({
+        "success": false,
+        "error": "Could not find ID or Title columns in the main sheet"
+      });
+    }
+    
+    // Get existing problem IDs in revision schedule
+    let existingProblems = [];
+    if (revisionSheet.getLastRow() > 1) {
+      const existingData = revisionSheet.getRange(2, 1, Math.max(1, revisionSheet.getLastRow() - 1), 1).getValues();
+      existingProblems = existingData.map(row => String(row[0])).filter(id => id !== "");
+    }
+    
+    // Ensure revision sheet has headers
+    if (revisionSheet.getLastRow() === 0) {
+      // Sheet is empty, add headers
+      revisionSheet.getRange(1, 1, 1, 7).setValues([[
+        "Problem ID", "Title", "Last Review Date", "Next Review Date", "Review Count", "Interval", "Status"
+      ]]);
+      revisionSheet.getRange("A1:G1").setFontWeight("bold");
+    }
+    
+    // Variables to track results
+    let addedCount = 0;
+    const problemsAdded = [];
+    let errors = [];
+    
+    // Handle different bulk types
+    switch (data.bulkType) {
+      case 'all':
+        // Add all problems not already in revision schedule
+        for (let i = 1; i < problemData.length; i++) {
+          const row = problemData[i];
+          const id = String(row[idIndex]);
+          const title = String(row[titleIndex] || "");
+          
+          if (id && !existingProblems.includes(id)) {
+            try {
+              const nextRow = revisionSheet.getLastRow() + 1;
+              
+              revisionSheet.getRange(nextRow, 1, 1, 7).setValues([[
+                id,                // Problem ID
+                title,             // Title
+                new Date(),        // Last Review Date (today)
+                reviewDate,        // Next Review Date
+                0,                 // Review Count
+                daysUntilReview,   // Interval (days)
+                "Pending"          // Status
+              ]]);
+              
+              addedCount++;
+              problemsAdded.push(id);
+              existingProblems.push(id); // Update tracking array to avoid duplicates
+            } catch (e) {
+              errors.push(`Error adding problem ${id}: ${e.toString()}`);
+            }
+          }
+        }
+        break;
+        
+      case 'today':
+        // Get today's date for comparison
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Add today's problems to revision schedule
+        for (let i = 1; i < problemData.length; i++) {
+          const row = problemData[i];
+          if (!row) continue;
+          
+          const id = String(row[idIndex] || "");
+          const title = String(row[titleIndex] || "");
+          
+          // Skip if ID is missing or already in schedule
+          if (!id || existingProblems.includes(id)) continue;
+          
+          // Should we add this problem? Default depends on if we found timestamp column
+          let addProblem = timestampIndex === -1;
+          
+          // If we have timestamp column, check if problem is from today
+          if (timestampIndex !== -1 && row.length > timestampIndex) {
+            const timestamp = row[timestampIndex];
+            if (timestamp && timestamp instanceof Date) {
+              // Check if the problem was added today
+              const problemDate = new Date(timestamp);
+              problemDate.setHours(0, 0, 0, 0);
+              
+              if (problemDate.getTime() === today.getTime()) {
+                addProblem = true;
+              }
+            }
+          }
+          
+          if (addProblem) {
+            try {
+              // Calculate next row safely (1-based index in Sheets)
+              const nextRow = revisionSheet.getLastRow() + 1;
+              
+              // Add the problem to revision schedule
+              revisionSheet.getRange(nextRow, 1, 1, 7).setValues([[
+                id,              // Problem ID
+                title,           // Title
+                new Date(),      // Last Review Date (today)
+                reviewDate,      // Next Review Date
+                0,               // Review Count
+                daysUntilReview, // Interval (days)
+                "Pending"        // Status
+              ]]);
+              
+              addedCount++;
+              problemsAdded.push(id);
+              existingProblems.push(id); // Update tracking array to avoid duplicates
+            } catch (e) {
+              errors.push(`Error adding problem ${id}: ${e.toString()}`);
+            }
+          }
+        }
+        break;
+        
+      case 'selected':
+        // Validate selected IDs array
+        if (!data.ids || !Array.isArray(data.ids) || data.ids.length === 0) {
+          return createJsonResponse({
+            "success": false,
+            "error": "Selected problem IDs array is required"
+          });
+        }
+        
+        // Add selected problems to revision schedule
+        for (let i = 0; i < data.ids.length; i++) {
+          const id = String(data.ids[i]);
+          
+          // Skip if ID is already in schedule
+          if (existingProblems.includes(id)) {
+            errors.push(`Problem ${id} already exists in review schedule`);
+            continue;
+          }
+          
+          // Find the problem in the main sheet
+          let title = '';
+          for (let j = 1; j < problemData.length; j++) {
+            if (String(problemData[j][idIndex]) === id) {
+              title = String(problemData[j][titleIndex] || "");
+              break;
+            }
+          }
+          
+          if (!title) {
+            errors.push(`Problem ${id} not found in main sheet`);
+            continue;
+          }
+          
+          try {
+            const nextRow = revisionSheet.getLastRow() + 1;
+            
+            revisionSheet.getRange(nextRow, 1, 1, 7).setValues([[
+              id,              // Problem ID
+              title,           // Title
+              new Date(),      // Last Review Date (today)
+              reviewDate,      // Next Review Date
+              0,               // Review Count
+              daysUntilReview, // Interval (days)
+              "Pending"        // Status
+            ]]);
+            
+            addedCount++;
+            problemsAdded.push(id);
+            existingProblems.push(id); // Update tracking array to avoid duplicates
+          } catch (e) {
+            errors.push(`Error adding problem ${id}: ${e.toString()}`);
+          }
+        }
+        break;
+        
+      default:
+        return createJsonResponse({
+          "success": false,
+          "error": `Unknown bulk type: ${data.bulkType}`
+        });
+    }
+    
+    return createJsonResponse({
+      "success": true,
+      "message": `Added ${addedCount} problems to review in ${daysUntilReview} day(s)`,
+      "addedCount": addedCount,
+      "addedProblems": problemsAdded,
+      "errors": errors.length > 0 ? errors : undefined
+    });
+  } catch (error) {
+    return createJsonResponse({
+      "success": false,
+      "error": error.toString()
+    });
   }
 }
 
@@ -440,6 +772,46 @@ function completeReview(data) {
 }
 
 /**
+ * Helper function to find a problem in the revision schedule
+ */
+function findProblemInRevisionSchedule(sheet, problemId) {
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return null; // Empty or just headers
+  
+  // Search for the problem ID (first column)
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] == problemId) {
+      return {
+        rowData: data[i],
+        rowIndex: i + 1  // +1 because sheet rows are 1-indexed
+      };
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Helper function to get problem title from main sheet
+ */
+function getProblemTitle(problemId) {
+  try {
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
+    const problem = findExistingProblem(sheet, problemId);
+    
+    if (problem && problem.rowData) {
+      // Title is in the third column (index 2) in the main sheet
+      return problem.rowData[2] || "";
+    }
+    
+    return "";
+  } catch (error) {
+    Logger.log("Error getting problem title: " + error.toString());
+    return "";
+  }
+}
+
+/**
  * Utility to get problem details from main sheet
  */
 function getProblemDetails(problemId) {
@@ -475,12 +847,14 @@ function getProblemDetails(problemId) {
  * Helper for creating JSON responses with CORS headers
  */
 function createJsonResponse(obj) {
-  // Add CORS headers to the response object
-  obj.headers = {
+  // Since setHeader isn't available in older Google Apps Script versions,
+  // we include the CORS headers directly in the JSON response
+  
+  // Add CORS headers manually to response object
+  obj.cors = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
-    'Access-Control-Max-Age': '3600'
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
   };
   
   return ContentService
