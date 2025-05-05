@@ -85,6 +85,17 @@ input:hover, select:hover, textarea:hover {
   border-color: #4b5563;
 }
 
+/* Settings page input height adjustment */
+.settings-page input[type="text"],
+.settings-page input[type="email"],
+.settings-page input[type="password"],
+.settings-page input[type="url"],
+input#script-url {
+  height: 2.5rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
 /* Animated gradients helper class */
 .animated-gradient {
   background-size: 200% 200%;

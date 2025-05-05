@@ -85,7 +85,7 @@ export default function Settings() {
 
   return (
     <AuthLayout>
-      <div className="px-4 py-6 space-y-8">
+      <div className="px-4 py-6 space-y-8 settings-page">
         {/* Header with subtle gradient background */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-premium p-6 mb-8">
           <div className="absolute top-0 right-0 -mt-10 -mr-10 h-32 w-32 rounded-full bg-blue-500/10 filter blur-xl"></div>
