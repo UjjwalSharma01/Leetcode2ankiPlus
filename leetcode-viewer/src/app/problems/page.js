@@ -28,6 +28,9 @@ export default function ProblemsPage() {
   const [currentPage, setCurrentPage] = useState(1); // Current page for pagination
   const [itemsPerPage, setItemsPerPage] = useState(20); // Number of items per page
   
+  // CSS classes for themed checkbox styling
+  const checkboxClasses = "h-4 w-4 text-blue-600 focus:ring-blue-500 dark:text-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:focus:ring-offset-gray-800"; 
+  
   // Extract all unique tags whenever problems change
   useEffect(() => {
     if (problems.length > 0) {
@@ -563,7 +566,7 @@ export default function ProblemsPage() {
                             type="checkbox"
                             checked={!!selectedProblems[problem.ID]}
                             onChange={() => toggleProblemSelection(problem.ID)}
-                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                            className={checkboxClasses}
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
@@ -635,7 +638,7 @@ export default function ProblemsPage() {
                             type="checkbox"
                             checked={!!selectedProblems[problem.ID]}
                             onChange={() => toggleProblemSelection(problem.ID)}
-                            className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                            className={checkboxClasses}
                           />
                         </div>
                         <span className="text-sm font-medium text-gray-900 dark:text-white mr-2">#{problem.ID}</span>
@@ -730,7 +733,7 @@ export default function ProblemsPage() {
                     >
                       <span className="sr-only">Next</span>
                       <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4-4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                       </svg>
                     </button>
                   </div>
