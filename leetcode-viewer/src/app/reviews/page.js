@@ -163,19 +163,16 @@ export default function ReviewsPage() {
           </div>
           
           <div className="flex space-x-2">
-            {/* Toggle Button */}
-            {(!showUpcoming && dueReviews.length > 0 && upcomingReviews.length > 0) || 
-             (showUpcoming && upcomingReviews.length > 0) ? (
-              <button
-                onClick={toggleReviewMode}
-                className={`self-start sm:self-auto inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm 
-                  ${showUpcoming 
-                    ? 'text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-300' 
-                    : 'text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300'}`}
-              >
-                {showUpcoming ? 'Show Due Today' : 'Show Upcoming'}
-              </button>
-            ) : null}
+            {/* Toggle Button - Always visible regardless of review state */}
+            <button
+              onClick={toggleReviewMode}
+              className={`self-start sm:self-auto inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm 
+                ${showUpcoming 
+                  ? 'text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-300' 
+                  : 'text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300'}`}
+            >
+              {showUpcoming ? 'Show Due Today' : 'Show Upcoming'}
+            </button>
             
             {/* Refresh Button */}
             <button
