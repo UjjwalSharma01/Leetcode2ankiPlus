@@ -21,6 +21,22 @@ module.exports = {
           800: '#166534',
           900: '#14532d',
         },
+        // Add premium accent colors
+        accent: {
+          primary: '#22c55e',    // Green-500
+          secondary: '#3b82f6',  // Blue-500
+          tertiary: '#8b5cf6',   // Violet-500
+        },
+      },
+      boxShadow: {
+        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        'inner-glow': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
+        'premium': '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+      },
+      backgroundImage: {
+        'gradient-premium': 'linear-gradient(to right, var(--tw-gradient-stops))',
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
       },
     },
   },
