@@ -25,6 +25,8 @@ export default function ProblemsPage() {
   const [showDaysModal, setShowDaysModal] = useState(false); // Modal for custom days selection
   const [reviewDays, setReviewDays] = useState(1); // Number of days for review
   const [selectedProblemForReview, setSelectedProblemForReview] = useState(null); // Currently selected problem for review
+  const [currentPage, setCurrentPage] = useState(1); // Current page for pagination
+  const [itemsPerPage, setItemsPerPage] = useState(20); // Number of items per page
   
   // Extract all unique tags whenever problems change
   useEffect(() => {
@@ -192,6 +194,40 @@ export default function ProblemsPage() {
     }
     return 0;
   });
+
+  // Get the current page of items
+  const indexOfLastProblem = currentPage * itemsPerPage;
+  const indexOfFirstProblem = indexOfLastProblem - itemsPerPage;
+  const currentProblems = sortedProblems.slice(indexOfFirstProblem, indexOfLastProblem);
+  
+  // Calculate total pages
+  const totalPages = Math.ceil(sortedProblems.length / itemsPerPage);
+  
+  // Handle page changes
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    // Scroll to top when changing pages
+    window.scrollTo(0, 0);
+  };
+  
+  // Handle items per page change
+  const handleItemsPerPageChange = (e) => {
+    const value = parseInt(e.target.value);
+    setItemsPerPage(value);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+  // Handle custom items per page input
+  const handleCustomItemsPerPageChange = (e) => {
+    // Use default value if invalid input
+    const value = parseInt(e.target.value) || 20;
+    
+    // Limit to reasonable values between 5 and 100
+    const limitedValue = Math.min(Math.max(value, 5), 100);
+    
+    setItemsPerPage(limitedValue);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
 
   return (
     <AuthLayout>
@@ -395,8 +431,8 @@ export default function ProblemsPage() {
                   </label>
                   <div className="mt-1 flex min-h-[44px] items-center">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Showing <span className="font-medium text-gray-900 dark:text-white">{sortedProblems.length}</span> of{' '}
-                      <span className="font-medium text-gray-900 dark:text-white">{problems.length}</span> problems
+                      Showing <span className="font-medium text-gray-900 dark:text-white">{currentProblems.length}</span> of{' '}
+                      <span className="font-medium text-gray-900 dark:text-white">{sortedProblems.length}</span> problems
                     </p>
                   </div>
                 </div>
@@ -452,7 +488,7 @@ export default function ProblemsPage() {
                       className={`mr-3 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium 
                       ${selectedProblemIds.length > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
                     >
-                      {selectedProblemIds.length === sortedProblems.length && sortedProblems.length > 0 
+                      {selectedProblemIds.length === currentProblems.length && currentProblems.length > 0 
                         ? 'Deselect All' 
                         : 'Select All'}
                     </button>
@@ -520,7 +556,7 @@ export default function ProblemsPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {sortedProblems.map((problem, index) => (
+                    {currentProblems.map((problem, index) => (
                       <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-center">
                           <input
@@ -577,7 +613,7 @@ export default function ProblemsPage() {
                         </td>
                       </tr>
                     ))}
-                    {sortedProblems.length === 0 && (
+                    {currentProblems.length === 0 && (
                       <tr>
                         <td colSpan="8" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                           No problems found matching your filters
@@ -590,7 +626,7 @@ export default function ProblemsPage() {
               
               {/* Mobile view - Card layout */}
               <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-                {sortedProblems.map((problem, index) => (
+                {currentProblems.map((problem, index) => (
                   <div key={index} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center">
@@ -661,7 +697,7 @@ export default function ProblemsPage() {
                   </div>
                 ))}
                 
-                {sortedProblems.length === 0 && (
+                {currentProblems.length === 0 && (
                   <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                     No problems found matching your filters
                   </div>
@@ -669,6 +705,91 @@ export default function ProblemsPage() {
               </div>
             </div>
             
+            {/* Pagination */}
+            <div className="mt-6 bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="flex items-center">
+                  <span className="text-sm text-gray-500 dark:text-gray-400 mr-4">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => paginate(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
+                    >
+                      <span className="sr-only">Previous</span>
+                      <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => paginate(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
+                    >
+                      <span className="sr-only">Next</span>
+                      <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <label htmlFor="itemsPerPage" className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                    Items per page:
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <select
+                      id="itemsPerPage"
+                      value={itemsPerPage}
+                      onChange={handleItemsPerPageChange}
+                      className="block min-w-[60px] pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                      {![10, 20, 50].includes(itemsPerPage) && (
+                        <option value={itemsPerPage}>{itemsPerPage}</option>
+                      )}
+                    </select>
+                    
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="5"
+                        max="100"
+                        value=""
+                        placeholder="Custom"
+                        aria-label="Custom items per page"
+                        onChange={handleCustomItemsPerPageChange}
+                        className="block w-24 pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md"
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <span className="text-gray-400">
+                          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z" />
+                          </svg>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Mobile view for page numbers */}
+              <div className="mt-4 sm:hidden flex justify-center">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Showing <span className="font-medium">{indexOfFirstProblem + 1}</span>
+                  {' '}-{' '}
+                  <span className="font-medium">{Math.min(indexOfLastProblem, sortedProblems.length)}</span>
+                  {' '}of{' '}
+                  <span className="font-medium">{sortedProblems.length}</span> problems
+                </p>
+              </div>
+            </div>
+
             {lastFetched && (
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
                 Last updated: {new Date(lastFetched).toLocaleString()}
