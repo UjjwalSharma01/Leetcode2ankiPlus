@@ -18,17 +18,27 @@ export async function fetchDueReviews(forceRefresh = false) {
     const requestId = `getDueReviews`;
     
     // If there's already a request in progress for this action, return that promise
+    // unless forceRefresh is true, in which case we cancel existing requests
     if (pendingRequests[requestId] && !forceRefresh) {
       console.log('Reusing existing promise for getDueReviews');
       return pendingRequests[requestId];
+    } else if (forceRefresh && pendingRequests[requestId]) {
+      // Clean up any pending requests when force refresh is requested
+      delete pendingRequests[requestId];
+      console.log('Forcing new request for getDueReviews, ignoring pending request');
     }
     
     // If forceRefresh is true, add it to the query parameters
-    const forceParam = forceRefresh ? '&forceRefresh=true' : '';
+    const forceParam = forceRefresh ? `&forceRefresh=true&nocache=${Date.now()}` : '';
     
     // Create a new request and store its promise
     const requestPromise = axios.get(`/api/proxy?url=${encodeURIComponent(scriptUrl)}&action=getDueReviews${forceParam}`, {
-      timeout: 30000
+      timeout: 30000,
+      headers: forceRefresh ? {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      } : {}
     })
     .then(response => {
       // On success, return the data and clean up the pending request
@@ -219,17 +229,27 @@ export async function fetchAllScheduledReviews(forceRefresh = false) {
     const requestId = `getAllScheduledReviews`;
     
     // If there's already a request in progress for this action, return that promise
+    // unless forceRefresh is true
     if (pendingRequests[requestId] && !forceRefresh) {
       console.log('Reusing existing promise for getAllScheduledReviews');
       return pendingRequests[requestId];
+    } else if (forceRefresh && pendingRequests[requestId]) {
+      // Clean up any pending requests when force refresh is requested
+      delete pendingRequests[requestId];
+      console.log('Forcing new request for getAllScheduledReviews, ignoring pending request');
     }
     
-    // If forceRefresh is true, add it to the query parameters
-    const forceParam = forceRefresh ? '&forceRefresh=true' : '';
+    // If forceRefresh is true, add it to the query parameters with timestamp to bust cache
+    const forceParam = forceRefresh ? `&forceRefresh=true&nocache=${Date.now()}` : '';
     
     // Create a new request that fetches both due reviews and the revision schedule
     const requestPromise = axios.get(`/api/proxy?url=${encodeURIComponent(scriptUrl)}&action=getAllScheduledReviews${forceParam}`, {
-      timeout: 30000
+      timeout: 30000,
+      headers: forceRefresh ? {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      } : {}
     })
     .then(response => {
       if (response.status === 200 && response.data) {
@@ -245,10 +265,18 @@ export async function fetchAllScheduledReviews(forceRefresh = false) {
           nextReviewDate: review.nextReviewDate ? new Date(review.nextReviewDate) : null
         }));
         
-        const processedUpcomingReviews = upcomingReviews.map(review => ({
-          ...review,
-          nextReviewDate: review.nextReviewDate ? new Date(review.nextReviewDate) : null
-        }));
+        const processedUpcomingReviews = upcomingReviews.map(review => {
+          // Handle different property naming formats from the server
+          const nextReviewDate = review.nextReviewDate || review['Next Review Date'];
+          return {
+            ...review,
+            // Convert ID/Title properties to consistent format
+            id: review.id || review.ID || review.Id,
+            title: review.title || review.Title,
+            // Ensure we have a valid Date object
+            nextReviewDate: nextReviewDate ? new Date(nextReviewDate) : null
+          };
+        });
         
         // Return the combined list
         return [...processedDueReviews, ...processedUpcomingReviews];

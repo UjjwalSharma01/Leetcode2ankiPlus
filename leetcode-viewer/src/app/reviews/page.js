@@ -17,7 +17,7 @@ export default function ReviewsPage() {
     refreshUpcomingReviews,
     refreshAllData, 
     lastReviewsFetched,
-    loadAllScheduledReviews,
+    loadUpcomingReviews,
     globalSyncId
   } = useData();
   
@@ -37,13 +37,13 @@ export default function ReviewsPage() {
       fetchingInProgress.current = true;
       // Add a small delay to allow multiple components to initialize before triggering fetch
       const timer = setTimeout(() => {
-        loadAllScheduledReviews();
+        loadUpcomingReviews();
         fetchingInProgress.current = false;
       }, 300);
       
       return () => clearTimeout(timer);
     }
-  }, [loadAllScheduledReviews, upcomingReviewsLoading, upcomingReviews.length, reviewsLoading, globalSyncId]);
+  }, [loadUpcomingReviews, upcomingReviewsLoading, upcomingReviews.length, reviewsLoading, globalSyncId]);
 
   // Update the timestamp when reviews data changes
   useEffect(() => {

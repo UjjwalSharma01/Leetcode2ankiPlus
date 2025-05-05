@@ -20,9 +20,10 @@ export function DataProvider({ children }) {
   const [upcomingReviewsLoading, setUpcomingReviewsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [reviewsError, setReviewsError] = useState(null);
+  const [upcomingReviewsError, setUpcomingReviewsError] = useState(null);
   const [lastFetched, setLastFetched] = useState(null);
   const [lastReviewsFetched, setLastReviewsFetched] = useState(null);
-  const [lastUpcomingFetched, setLastUpcomingFetched] = useState(null);
+  const [lastUpcomingReviewsFetched, setLastUpcomingReviewsFetched] = useState(null);
   const [needsScriptUrl, setNeedsScriptUrl] = useState(false);
   const [syncInProgress, setSyncInProgress] = useState(true); // Assume sync is in progress initially
   const [syncTimeout, setSyncTimeout] = useState(null);
@@ -32,9 +33,10 @@ export function DataProvider({ children }) {
   const [fetchingProblems, setFetchingProblems] = useState(false);
   const [fetchingDueReviews, setFetchingDueReviews] = useState(false);
   const [fetchingAllReviews, setFetchingAllReviews] = useState(false);
+  const [fetchingUpcomingReviews, setFetchingUpcomingReviews] = useState(false);
   const [pendingFetchProblems, setPendingFetchProblems] = useState(false);
   const [pendingFetchReviews, setPendingFetchReviews] = useState(false);
-  const [pendingFetchUpcoming, setPendingFetchUpcoming] = useState(false);
+  const [pendingFetchUpcomingReviews, setPendingFetchUpcomingReviews] = useState(false);
   const [cacheValidTime] = useState(15 * 60 * 1000); // 15 minutes in milliseconds (increased from 5)
   
   // Track if initial data is loaded to avoid redundant API calls
@@ -108,7 +110,7 @@ export function DataProvider({ children }) {
     // Don't try to fetch data if not authenticated
     if (!user) return;
     
-    // Check for cached data in session storage first
+    // Check for cached data in session storage first (only if not forcing refresh)
     const cachedData = !force ? getDataFromCache('leetcode_problems') : null;
     if (cachedData) {
       setProblems(cachedData);
@@ -127,9 +129,9 @@ export function DataProvider({ children }) {
       return;
     }
     
-    // Throttle refreshes to prevent multiple rapid refreshes
+    // Throttle refreshes to prevent multiple rapid refreshes - but only if not forcing
     const now = Date.now();
-    if (!force && now - lastRefreshTime.current.problems < 3000) { // Increased from 2s to 3s threshold
+    if (!force && now - lastRefreshTime.current.problems < 3000) {
       console.log('Throttling problem data refresh, too soon after previous refresh');
       return;
     }
@@ -137,9 +139,13 @@ export function DataProvider({ children }) {
     
     // Prevent duplicate fetch requests
     if (fetchingProblems) {
-      console.log('Problems fetch already in progress, skipping redundant request');
-      setPendingFetchProblems(true);
-      return;
+      if (force) {
+        console.log('Force refresh requested, continuing despite in-progress fetch');
+      } else {
+        console.log('Problems fetch already in progress, skipping redundant request');
+        setPendingFetchProblems(true);
+        return;
+      }
     }
     
     try {
@@ -147,9 +153,10 @@ export function DataProvider({ children }) {
       setFetchingProblems(true);
       setError(null);
       
-      console.log('Fetching problems data from API');
+      console.log('Fetching problems data from API' + (force ? ' (forced refresh)' : ''));
       // Pass true for skipUrlCheck during initial login when syncInProgress is true
-      const data = await fetchLeetCodeProblems(syncInProgress);
+      // Also pass force parameter to fetchLeetCodeProblems
+      const data = await fetchLeetCodeProblems(syncInProgress, force);
       
       // Check if we got a special response indicating missing script URL
       if (data && data.needsScriptUrl) {
@@ -166,8 +173,16 @@ export function DataProvider({ children }) {
         setLastFetched(timestamp);
         initialDataLoaded.current.problems = true;
         
-        // Cache the data in session storage
-        cacheDataInSession('leetcode_problems', problemsData, timestamp);
+        // Cache the data in session storage - only if not a forced refresh
+        if (!force) {
+          cacheDataInSession('leetcode_problems', problemsData, timestamp);
+        } else {
+          console.log('Skipping cache update for forced refresh');
+          // Clear the existing cache when forced
+          if (typeof window !== 'undefined') {
+            window.sessionStorage.removeItem('leetcode_problems');
+          }
+        }
         
         // Update global sync ID to trigger updates across all components
         setGlobalSyncId(Date.now());
@@ -175,7 +190,7 @@ export function DataProvider({ children }) {
         // Broadcast that data has been refreshed
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('leetcodeDataRefreshed', {
-            detail: { timestamp, syncId: Date.now() }
+            detail: { timestamp, syncId: Date.now(), forced: force }
           }));
         }
       }
@@ -265,70 +280,57 @@ export function DataProvider({ children }) {
   }, [user, dueReviews.length, needsScriptUrl, lastReviewsFetched, 
       fetchingDueReviews, isDataStale, getDataFromCache, cacheDataInSession]);
 
-  // Load all scheduled reviews (due + upcoming)
-  const loadAllScheduledReviews = useCallback(async (force = false) => {
-    // Don't try to fetch data if not authenticated
-    if (!user) return;
-    
-    // Check for cached data in session storage first
-    const cachedData = !force ? getDataFromCache('upcoming_reviews') : null;
-    if (cachedData) {
-      setUpcomingReviews(cachedData);
-      // Set last fetched from cache timestamp
-      const cached = JSON.parse(window.sessionStorage.getItem('upcoming_reviews'));
-      setLastUpcomingFetched(cached.timestamp);
-      initialDataLoaded.current.upcomingReviews = true;
-      return;
-    }
-    
-    // Skip fetching if data exists, force is false, and cache is valid
-    if (upcomingReviews.length > 0 && !force && !isDataStale(lastUpcomingFetched)) {
-      console.log('Using cached upcoming reviews data, skip fetching');
-      initialDataLoaded.current.upcomingReviews = true;
-      return;
-    }
-    
-    // Throttle refreshes to prevent multiple rapid refreshes
-    const now = Date.now();
-    if (!force && now - lastRefreshTime.current.upcomingReviews < 3000) { // Increased from 2s to 3s threshold
-      console.log('Throttling upcoming reviews refresh, too soon after previous refresh');
-      return;
-    }
-    lastRefreshTime.current.upcomingReviews = now;
-    
-    // Prevent duplicate fetch requests
-    if (fetchingAllReviews) {
-      console.log('All reviews fetch already in progress, skipping redundant request');
-      setPendingFetchUpcoming(true);
-      return;
-    }
-    
+  // Load upcoming reviews
+  const loadUpcomingReviews = useCallback(async (forceRefresh = false) => {
     try {
-      setUpcomingReviewsLoading(true);
-      setFetchingAllReviews(true);
+      // Skip if script URL isn't configured or user isn't logged in
+      if (!user || !needsScriptUrl || fetchingUpcomingReviews) return;
       
-      console.log('Fetching all scheduled reviews from API');
-      const allReviews = await fetchAllScheduledReviews();
+      // Don't refresh if we just did recently (unless forced)
+      if (!forceRefresh && lastUpcomingReviewsFetched 
+          && (new Date() - new Date(lastUpcomingReviewsFetched) < 60000)) {
+        return;
+      }
       
-      // Process review dates to find upcoming reviews
+      setFetchingUpcomingReviews(true);
+      
+      // Check if we have cached data
+      if (!forceRefresh) {
+        const cachedData = getDataFromCache('upcoming_reviews');
+        if (cachedData) {
+          setUpcomingReviews(cachedData.data);
+          setLastUpcomingReviewsFetched(cachedData.timestamp);
+          setFetchingUpcomingReviews(false);
+          initialDataLoaded.current.upcomingReviews = true;
+          return;
+        }
+      }
+      
+      // Fetch all scheduled reviews (includes upcoming)
+      const allReviews = await fetchAllScheduledReviews(forceRefresh);
+      
+      // Filter out the due reviews (today or earlier) to find upcoming ones
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Get all the IDs of problems already in due reviews to avoid duplicates
-      const dueIds = new Set(dueReviews.map(review => review.id));
+      // Get a list of all due review IDs for filtering
+      const dueReviewIds = new Set(dueReviews.map(r => r.id));
       
-      // Filter for upcoming reviews (future date) and exclude ones already in dueReviews
+      // Filter for upcoming reviews only (future dates that aren't in dueReviews)
       const upcoming = allReviews.filter(review => {
-        // Check if this is already in due reviews
-        const reviewId = review.ID || review.Id || review.id;
-        if (dueIds.has(reviewId)) return false;
-        
-        // Check review date
-        const reviewDate = review['Next Review Date'] || review.nextReviewDate;
-        if (!reviewDate) return false;
-        
         try {
-          // Convert to Date object and handle date strings properly
+          // Get the review date field (handle different property names)
+          const reviewDate = review.nextReviewDate || review['Next Review Date'];
+          if (!reviewDate) {
+            console.error("Missing review date:", review);
+            return false;
+          }
+          
+          // Skip if this review is already in the due reviews
+          const reviewId = review.id || review.ID || review.Id;
+          if (dueReviewIds.has(reviewId)) return false;
+          
+          // Convert to date object if needed
           const nextReview = reviewDate instanceof Date ? reviewDate : new Date(reviewDate);
           if (isNaN(nextReview.getTime())) {
             console.error("Invalid review date:", reviewDate);
@@ -348,35 +350,28 @@ export function DataProvider({ children }) {
         }
       }).sort((a, b) => {
         // Sort by date ascending
-        const dateA = new Date(a['Next Review Date'] || a.nextReviewDate);
-        const dateB = new Date(b['Next Review Date'] || b.nextReviewDate);
+        const dateA = new Date(a.nextReviewDate || a['Next Review Date']);
+        const dateB = new Date(b.nextReviewDate || b['Next Review Date']);
         return dateA - dateB;
       });
       
       console.log(`Found ${upcoming.length} upcoming reviews`);
       setUpcomingReviews(upcoming);
       const timestamp = new Date().toISOString();
-      setLastUpcomingFetched(timestamp);
+      setLastUpcomingReviewsFetched(timestamp);
       initialDataLoaded.current.upcomingReviews = true;
       
       // Cache the data in session storage
       cacheDataInSession('upcoming_reviews', upcoming, timestamp);
       
-      // Broadcast that upcoming reviews data has been refreshed
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('upcomingReviewsRefreshed', {
-          detail: { timestamp, syncId: Date.now() }
-        }));
-      }
     } catch (err) {
-      console.error('Error fetching all scheduled reviews:', err);
+      console.error('Error fetching upcoming review data:', err);
+      setUpcomingReviewsError('Failed to load upcoming reviews. Please check your connection and try again.');
     } finally {
-      setUpcomingReviewsLoading(false);
-      setFetchingAllReviews(false);
-      setPendingFetchUpcoming(false);
+      setFetchingUpcomingReviews(false);
+      setPendingFetchUpcomingReviews(false);
     }
-  }, [user, upcomingReviews.length, lastUpcomingFetched, fetchingAllReviews, 
-      dueReviews, isDataStale, getDataFromCache, cacheDataInSession]);
+  }, [user, needsScriptUrl, fetchingUpcomingReviews, lastUpcomingReviewsFetched, dueReviews]);
 
   // Track page changes
   useEffect(() => {
@@ -408,7 +403,7 @@ export function DataProvider({ children }) {
               if (reviewsDataIsStale) {
                 console.log('Reviews data is stale on route change, refreshing');
                 loadReviews();
-                loadAllScheduledReviews();
+                loadUpcomingReviews();
               }
             }
           };
@@ -439,7 +434,7 @@ export function DataProvider({ children }) {
       // Clean up
       return () => observer.disconnect();
     }
-  }, [loadData, loadReviews, loadAllScheduledReviews, lastFetched, lastReviewsFetched, isDataStale]);
+  }, [loadData, loadReviews, loadUpcomingReviews, lastFetched, lastReviewsFetched, isDataStale]);
 
   // Set up a sync timeout to stop waiting after a reasonable time
   useEffect(() => {
@@ -480,14 +475,14 @@ export function DataProvider({ children }) {
       loadReviews(true);
     }
     
-    if (pendingFetchUpcoming && !fetchingAllReviews) {
-      setPendingFetchUpcoming(false);
-      loadAllScheduledReviews(true);
+    if (pendingFetchUpcomingReviews && !fetchingUpcomingReviews) {
+      setPendingFetchUpcomingReviews(false);
+      loadUpcomingReviews(true);
     }
   }, [
-    fetchingProblems, fetchingDueReviews, fetchingAllReviews,
-    pendingFetchProblems, pendingFetchReviews, pendingFetchUpcoming, 
-    loadData, loadReviews, loadAllScheduledReviews
+    fetchingProblems, fetchingDueReviews, fetchingUpcomingReviews,
+    pendingFetchProblems, pendingFetchReviews, pendingFetchUpcomingReviews, 
+    loadData, loadReviews, loadUpcomingReviews
   ]);
 
   // Listen for script URL sync events
@@ -505,7 +500,7 @@ export function DataProvider({ children }) {
       // Force refresh all data when script URL is updated
       loadData(true);
       loadReviews(true);
-      loadAllScheduledReviews(true);
+      loadUpcomingReviews(true);
     };
 
     if (typeof window !== 'undefined') {
@@ -517,7 +512,7 @@ export function DataProvider({ children }) {
         window.removeEventListener('scriptUrlSynced', handleScriptUrlSync);
       }
     };
-  }, [loadData, loadReviews, loadAllScheduledReviews, syncTimeout]);
+  }, [loadData, loadReviews, loadUpcomingReviews, syncTimeout]);
 
   // Listen for data refresh events from other components
   useEffect(() => {
@@ -541,7 +536,7 @@ export function DataProvider({ children }) {
       if (event.detail && event.detail.syncId !== globalSyncId) {
         console.log('Upcoming reviews refresh detected from another component');
         // Check if we need to refresh our local state
-        loadAllScheduledReviews();
+        loadUpcomingReviews();
       }
     };
     
@@ -558,7 +553,7 @@ export function DataProvider({ children }) {
         window.removeEventListener('upcomingReviewsRefreshed', handleUpcomingRefresh);
       }
     };
-  }, [loadData, loadReviews, loadAllScheduledReviews, globalSyncId]);
+  }, [loadData, loadReviews, loadUpcomingReviews, globalSyncId]);
 
   // Handle visibility changes (tab switching)
   useEffect(() => {
@@ -572,7 +567,7 @@ export function DataProvider({ children }) {
         // Check if data is stale when tab becomes visible
         const problemsDataIsStale = isDataStale(lastFetched);
         const reviewsDataIsStale = isDataStale(lastReviewsFetched);
-        const upcomingDataIsStale = isDataStale(lastUpcomingFetched);
+        const upcomingDataIsStale = isDataStale(lastUpcomingReviewsFetched);
         
         // Only refresh data relevant to the current page to avoid unnecessary API calls
         if (currentPath === '/' || currentPath === '/dashboard' || currentPath === '/problems' || currentPath === '/settings') {
@@ -590,7 +585,7 @@ export function DataProvider({ children }) {
           
           if (upcomingDataIsStale) {
             console.log('Upcoming reviews data is stale, refreshing...');
-            loadAllScheduledReviews(true);
+            loadUpcomingReviews(true);
           }
         }
       }
@@ -600,7 +595,7 @@ export function DataProvider({ children }) {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [loadData, loadReviews, loadAllScheduledReviews, lastFetched, lastReviewsFetched, lastUpcomingFetched, isDataStale]);
+  }, [loadData, loadReviews, loadUpcomingReviews, lastFetched, lastReviewsFetched, lastUpcomingReviewsFetched, isDataStale]);
 
   // Redirect to settings page if script URL is needed
   useEffect(() => {
@@ -634,19 +629,19 @@ export function DataProvider({ children }) {
   }, [loadReviews]);
   
   const refreshUpcomingReviews = useCallback(() => {
-    loadAllScheduledReviews(true);
+    loadUpcomingReviews(true);
     // Update global sync ID to trigger updates across all components
     setGlobalSyncId(Date.now());
-  }, [loadAllScheduledReviews]);
+  }, [loadUpcomingReviews]);
 
   // Refresh both problem and review data at once
   const refreshAllData = useCallback(() => {
     loadData(true);
     loadReviews(true);
-    loadAllScheduledReviews(true);
+    loadUpcomingReviews(true);
     // Update global sync ID to trigger updates across all components
     setGlobalSyncId(Date.now());
-  }, [loadData, loadReviews, loadAllScheduledReviews]);
+  }, [loadData, loadReviews, loadUpcomingReviews]);
 
   // Context value
   const value = {
@@ -663,10 +658,10 @@ export function DataProvider({ children }) {
     refreshReviews,
     refreshUpcomingReviews,
     refreshAllData,
-    loadAllScheduledReviews,
+    loadUpcomingReviews,
     lastFetched,
     lastReviewsFetched,
-    lastUpcomingFetched,
+    lastUpcomingReviewsFetched,
     isAuthenticated: !!user,
     needsScriptUrl,
     syncInProgress,
