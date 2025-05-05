@@ -710,10 +710,14 @@ function completeReview(data) {
     const rowData = sheetData[problemRow - 1];
     const reviewCount = rowData[4];
     
-    // Process based on difficulty rating
+    // Process based on difficulty rating or custom interval
     let nextInterval = 1; // Default: review tomorrow
     
-    if (data.difficulty === "easy") {
+    if (data.difficulty === "custom" && data.nextInterval) {
+      // Use the user-specified interval
+      nextInterval = parseInt(data.nextInterval);
+      if (isNaN(nextInterval) || nextInterval < 1) nextInterval = 1;
+    } else if (data.difficulty === "easy") {
       nextInterval = Math.min(30, reviewCount * 2 + 1); // Exponential growth, max 30 days
     } else if (data.difficulty === "medium") {
       nextInterval = Math.min(14, reviewCount + 2); // Linear growth, max 14 days

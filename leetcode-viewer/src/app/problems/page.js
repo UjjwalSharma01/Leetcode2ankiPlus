@@ -22,6 +22,9 @@ export default function ProblemsPage() {
   const [addingToReview, setAddingToReview] = useState({}); // Track which problems are being added to review
   const [selectedProblems, setSelectedProblems] = useState({}); // Track selected problems for bulk operations
   const [showBulkActions, setShowBulkActions] = useState(false); // Toggle for bulk operations panel
+  const [showDaysModal, setShowDaysModal] = useState(false); // Modal for custom days selection
+  const [reviewDays, setReviewDays] = useState(1); // Number of days for review
+  const [selectedProblemForReview, setSelectedProblemForReview] = useState(null); // Currently selected problem for review
   
   // Extract all unique tags whenever problems change
   useEffect(() => {
@@ -117,6 +120,37 @@ export default function ProblemsPage() {
     }
   };
 
+  const scheduleReview = async (days) => {
+    if (!selectedProblemForReview) return;
+    
+    setAddingToReview(prev => ({ ...prev, [selectedProblemForReview.ID]: true }));
+    try {
+      const response = await addProblemToReview(
+        selectedProblemForReview.ID, 
+        selectedProblemForReview.Title, 
+        days, // Use the selected number of days
+        false // Don't update if exists
+      );
+      
+      if (response.success) {
+        toast.success(`Problem ${selectedProblemForReview.ID} added to review in ${days} day(s)!`);
+        setShowDaysModal(false);
+        setSelectedProblemForReview(null);
+      } else if (response.exists) {
+        toast.error(`Problem ${selectedProblemForReview.ID} already exists in review schedule.`);
+        setShowDaysModal(false);
+        setSelectedProblemForReview(null);
+      } else {
+        toast.error(`Error: ${response.error}`);
+      }
+    } catch (error) {
+      console.error('Error adding problem to review:', error);
+      toast.error('Failed to add problem to review. Check console for details.');
+    } finally {
+      setAddingToReview(prev => ({ ...prev, [selectedProblemForReview.ID]: false }));
+    }
+  };
+
   const filteredProblems = problems.filter(problem => {
     // Filter by search term
     const searchMatch = problem.Title?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
@@ -161,6 +195,69 @@ export default function ProblemsPage() {
 
   return (
     <AuthLayout>
+      {/* Custom Days Selection Modal */}
+      {showDaysModal && selectedProblemForReview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              Schedule Review for Problem #{selectedProblemForReview.ID}
+            </h3>
+            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              {selectedProblemForReview.Title}
+            </p>
+            <div className="mb-4">
+              <label htmlFor="reviewDays" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Days until review:
+              </label>
+              <input
+                type="number"
+                min="1"
+                id="reviewDays"
+                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                value={reviewDays}
+                onChange={(e) => {
+                  // Get the value from the input
+                  const value = e.target.value;
+                  
+                  // Convert to number or set to empty string if invalid
+                  const numValue = value === '' ? 0 : parseInt(value);
+                  
+                  // Update state with the parsed value
+                  setReviewDays(numValue);
+                }}
+                onFocus={(e) => {
+                  // Select all text when input is focused
+                  e.target.select();
+                }}
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Problem will be scheduled for review in {reviewDays} day{reviewDays !== 1 ? 's' : ''}
+              </p>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <button
+                type="button"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                onClick={() => {
+                  setShowDaysModal(false);
+                  setSelectedProblemForReview(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => scheduleReview(reviewDays)}
+                disabled={reviewDays < 1}
+              >
+                Schedule Review
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="px-4 py-6">
         <div className="mb-8 flex justify-between items-center">
           <div>
@@ -468,7 +565,10 @@ export default function ProblemsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                           <button
-                            onClick={() => handleAddToReview(problem)}
+                            onClick={() => {
+                              setSelectedProblemForReview(problem);
+                              setShowDaysModal(true);
+                            }}
                             disabled={addingToReview[problem.ID]}
                             className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                           >
@@ -548,7 +648,10 @@ export default function ProblemsPage() {
 
                     <div className="mt-2 ml-7">
                       <button
-                        onClick={() => handleAddToReview(problem)}
+                        onClick={() => {
+                          setSelectedProblemForReview(problem);
+                          setShowDaysModal(true);
+                        }}
                         disabled={addingToReview[problem.ID]}
                         className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                       >

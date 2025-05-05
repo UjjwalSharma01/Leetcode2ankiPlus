@@ -25,6 +25,8 @@ export default function ReviewsPage() {
   const [completed, setCompleted] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [showUpcoming, setShowUpcoming] = useState(false); // Toggle state for showing upcoming/due reviews
+  const [customDays, setCustomDays] = useState(0); // Add state for custom days input
+  const [showCustomDays, setShowCustomDays] = useState(false); // Toggle for custom days input
   const fetchingInProgress = useRef(false); // Add a ref to track if a fetch is in progress
   
   // Load upcoming reviews from DataContext when component mounts or when globalSyncId changes
@@ -72,12 +74,21 @@ export default function ReviewsPage() {
     if (!activeReview) return;
     
     try {
-      await completeReview(activeReview, difficulty);
+      // If difficulty is 'custom', pass the custom days as nextInterval
+      if (difficulty === 'custom') {
+        if (customDays < 1) return; // Safety check
+        await completeReview(activeReview, difficulty, true, customDays);
+      } else {
+        await completeReview(activeReview, difficulty);
+      }
       
       // Update local completed state
       const newCompleted = [...completed, activeReview.id];
       setCompleted(newCompleted);
       setActiveReview(null);
+      
+      // Reset custom days input
+      setShowCustomDays(false);
       
       // Save completed state in sessionStorage
       try {
@@ -239,22 +250,28 @@ export default function ReviewsPage() {
               <p className="mb-4 font-medium text-gray-800 dark:text-gray-200">How difficult was this problem for you?</p>
               <div className="flex flex-wrap gap-2">
                 <button 
-                  onClick={() => handleReviewComplete('easy')} 
+                  onClick={() => !showCustomDays && handleReviewComplete('easy')} 
                   className="px-4 py-3 sm:py-2 bg-green-500 hover:bg-green-600 text-white dark:bg-green-600 dark:hover:bg-green-500 rounded transition-colors w-full sm:w-auto min-h-[44px]"
                 >
                   Easy
                 </button>
                 <button 
-                  onClick={() => handleReviewComplete('medium')} 
+                  onClick={() => !showCustomDays && handleReviewComplete('medium')} 
                   className="px-4 py-3 sm:py-2 bg-yellow-500 hover:bg-yellow-600 text-white dark:bg-yellow-600 dark:hover:bg-yellow-500 rounded transition-colors w-full sm:w-auto min-h-[44px]"
                 >
                   Medium
                 </button>
                 <button 
-                  onClick={() => handleReviewComplete('hard')} 
+                  onClick={() => !showCustomDays && handleReviewComplete('hard')} 
                   className="px-4 py-3 sm:py-2 bg-red-500 hover:bg-red-600 text-white dark:bg-red-600 dark:hover:bg-red-500 rounded transition-colors w-full sm:w-auto min-h-[44px]"
                 >
                   Hard
+                </button>
+                <button 
+                  onClick={() => setShowCustomDays(!showCustomDays)} 
+                  className="px-4 py-3 sm:py-2 bg-blue-500 hover:bg-blue-600 text-white dark:bg-blue-600 dark:hover:bg-blue-500 rounded transition-colors w-full sm:w-auto min-h-[44px]"
+                >
+                  {showCustomDays ? 'Hide Custom Days' : 'Custom Days'}
                 </button>
                 <button 
                   onClick={handleSkip} 
@@ -263,6 +280,33 @@ export default function ReviewsPage() {
                   Skip
                 </button>
               </div>
+              
+              {showCustomDays && (
+                <div className="mt-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md">
+                  <div className="mb-4">
+                    <label htmlFor="customDaysInput" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Specify number of days until next review:
+                    </label>
+                    <input
+                      id="customDaysInput"
+                      type="number"
+                      min="1"
+                      value={customDays}
+                      onChange={(e) => setCustomDays(parseInt(e.target.value) || 0)}
+                      className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:w-40 text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button 
+                      onClick={() => handleReviewComplete('custom')}
+                      disabled={customDays < 1}
+                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white dark:bg-blue-600 dark:hover:bg-blue-500 rounded transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Schedule in {customDays > 0 ? customDays : 'X'} days
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : (

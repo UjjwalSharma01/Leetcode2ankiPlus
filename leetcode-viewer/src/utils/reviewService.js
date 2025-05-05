@@ -64,7 +64,7 @@ export async function fetchDueReviews(forceRefresh = false) {
 /**
  * Completes a review
  */
-export async function completeReview(problem, difficulty, complete = true) {
+export async function completeReview(problem, difficulty, complete = true, nextInterval = null) {
   try {
     const scriptUrl = getScriptUrlFromStorage();
     if (!scriptUrl) {
@@ -76,8 +76,9 @@ export async function completeReview(problem, difficulty, complete = true) {
       scriptUrl,
       action: 'completeReview',
       id: problem.id,
-      difficulty, // 'easy', 'medium', or 'hard'
-      complete    // boolean indicating if problem was completed successfully
+      difficulty, // 'easy', 'medium', 'hard', or 'custom'
+      complete,   // boolean indicating if problem was completed successfully
+      nextInterval // optional custom interval in days (used when difficulty is 'custom')
     }, {
       headers: {
         'Content-Type': 'application/json'
