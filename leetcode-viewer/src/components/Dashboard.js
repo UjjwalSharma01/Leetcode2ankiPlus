@@ -328,6 +328,14 @@ export default function Dashboard() {
                 Last updated: {new Date(lastFetched).toLocaleString()}
               </div>
             )}
+            
+            {/* Legal Disclaimer */}
+            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                <strong>Disclaimer:</strong> This application is not affiliated with, endorsed by, or sponsored by LeetCode or Anki. 
+                LeetCode and Anki are registered trademarks of their respective owners. This is an independent tool created for educational purposes.
+              </p>
+            </div>
           </>
         )}
       </div>
