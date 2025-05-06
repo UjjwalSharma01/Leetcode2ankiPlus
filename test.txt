@@ -1,0 +1,210 @@
+# Plan for Implementing Problem Review Submission through Frontend UI
+
+## Current System Analysis
+1. LeetcodeSRS.gs has functionality for adding problems to review (addProblemsToReview, manuallyAddProblem)
+2. GoogleAppsScript.gs handles web requests with doGet and doPost functions
+3. Current doPost handles:
+   - Adding new problem data to the main spreadsheet
+   - Completing reviews (completeReview function)
+4. Frontend UI can already get due reviews with action=getDueReviews in doGet
+
+## Required Changes to Enable Frontend Problem Submission for Review
+
+### 1. Add a new action handler in GoogleAppsScript.gs doPost function
+- Implement an "addToReview" action that will add problems to the Revision Schedule sheet
+- This should be a minimal addition to the existing switch-case in doPost
+
+### 2. Create a new function in GoogleAppsScript.gs
+- Function name: `addProblemToReview`
+- Parameters needed:
+  - Problem ID (required)
+  - Title (optional, can be fetched from main sheet if not provided)
+  - Days until first review (optional, default to 1 day)
+  - Status (optional, default to "Pending")
+- This function will:
+  1. Check if Revision Schedule sheet exists
+  2. Validate the problem ID
+  3. Check if the problem already exists in the revision schedule
+  4. If not, add it with appropriate review date
+  5. If it exists, optionally update the review date
+
+### 3. Detailed Implementation Steps
+
+#### Step 1: Update doPost function to handle new action
+- Add a new condition to check for action="addToReview"
+- Call the new addProblemToReview function with the request data
+
+#### Step 2: Implement the addProblemToReview function
+- Function signature: `function addProblemToReview(data)`
+- Check if Revision Schedule sheet exists, create it if not (or return error)
+- Validate problem ID exists
+- Lookup problem in main sheet to get title if not provided
+- Calculate review date based on days parameter (default 1)
+- Check if problem already exists in revision schedule
+  - If exists, update or return message (based on parameter)
+  - If not exists, add new entry
+
+#### Step 3: Return appropriate JSON responses
+- Success: problem added to review schedule
+- Already exists: problem already in review schedule (with option to update)
+- Error: missing parameters or sheet not found
+
+### 4. Code Structure (Pseudocode)
+
+```javascript
+// In doPost
+if (data.action === 'addToReview') {
+  return addProblemToReview(data);
+}
+
+// New function 
+function addProblemToReview(data) {
+  try {
+    // Validate required data
+    if (!data.id) {
+      return createJsonResponse({
+        "success": false,
+        "error": "Problem ID is required"
+      });
+    }
+    
+    // Get or create Revision Schedule sheet
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const revisionSheet = ss.getSheetByName("Revision Schedule");
+    
+    if (!revisionSheet) {
+      // Option 1: Return error
+      return createJsonResponse({
+        "success": false,
+        "error": "Revision Schedule sheet not found. Please set up SRS system first."
+      });
+      
+      // OR Option 2: Create the sheet (similar to setupSpacedRepetitionSystem in LeetcodeSRS.gs)
+    }
+    
+    // Calculate next review date
+    const daysUntilReview = parseInt(data.days || 1);
+    const reviewDate = new Date();
+    reviewDate.setDate(reviewDate.getDate() + daysUntilReview);
+    
+    // Get the problem title (from data or lookup in main sheet)
+    let title = data.title || "";
+    if (!title) {
+      title = getProblemTitle(data.id);
+    }
+    
+    // Check if problem already exists in revision schedule
+    // [Implementation similar to existing findExistingProblem but for revision sheet]
+    const existingProblem = findProblemInRevisionSchedule(revisionSheet, data.id);
+    
+    if (existingProblem) {
+      if (data.updateIfExists) {
+        // Update existing problem
+        // [Implementation]
+        return createJsonResponse({
+          "success": true,
+          "message": `Problem ${data.id} already exists in revision schedule. Updated review date.`,
+          "wasUpdated": true
+        });
+      } else {
+        return createJsonResponse({
+          "success": false,
+          "error": `Problem ${data.id} already exists in revision schedule.`,
+          "exists": true
+        });
+      }
+    }
+    
+    // Add new problem to revision schedule
+    const nextRow = revisionSheet.getLastRow() + 1;
+    revisionSheet.getRange(nextRow, 1, 1, 7).setValues([[
+      data.id,              // Problem ID
+      title,                // Title
+      new Date(),           // Last Review Date (today)
+      reviewDate,           // Next Review Date
+      0,                    // Review Count
+      daysUntilReview,      // Interval (days)
+      data.status || "Pending" // Status
+    ]]);
+    
+    return createJsonResponse({
+      "success": true,
+      "message": `Problem ${data.id} added to revision schedule for review in ${daysUntilReview} day(s).`,
+      "id": data.id,
+      "nextReviewDate": reviewDate.toISOString()
+    });
+  } catch (error) {
+    return createJsonResponse({
+      "success": false,
+      "error": error.toString()
+    });
+  }
+}
+
+// Helper function to find a problem in the revision schedule
+function findProblemInRevisionSchedule(sheet, problemId) {
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return null; // Empty or just headers
+  
+  // Search for the problem ID (first column)
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] == problemId) {
+      return {
+        rowData: data[i],
+        rowIndex: i + 1  // +1 because sheet rows are 1-indexed
+      };
+    }
+  }
+  
+  return null;
+}
+
+// Helper function to get problem title from main sheet
+function getProblemTitle(problemId) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
+  const problem = findExistingProblem(sheet, problemId);
+  
+  if (problem && problem.rowData) {
+    // Title is typically in the 3rd column (index 2) in the main sheet
+    return problem.rowData[2] || "";
+  }
+  
+  return "";
+}
+```
+
+### 5. Frontend UI Integration
+
+The frontend application will need to:
+
+1. Add a "Add to Review" button on problem pages/lists
+2. When clicked, send a POST request with:
+   ```json
+   {
+     "action": "addToReview",
+     "id": "123",  // Problem ID
+     "days": 1,    // Optional: Days until first review
+     "title": "Two Sum"  // Optional: Problem title
+   }
+   ```
+3. Handle the response:
+   - Success: Show confirmation message
+   - Already exists: Show message, maybe offer to reschedule
+   - Error: Show error message
+
+### 6. Testing Plan
+
+1. Test adding a new problem to review that doesn't exist in the schedule
+2. Test adding a problem that already exists in the schedule
+3. Test with different days until review values
+4. Test error cases (missing ID, non-existent revision sheet)
+5. Test with updating existing problems
+6. Test integration with frontend UI
+
+### 7. Rollout Steps
+
+1. Implement the server-side changes in GoogleAppsScript.gs
+2. Deploy the updated Apps Script
+3. Update the frontend UI to use the new API endpoint
+4. Test end-to-end functionality
+5. Deploy to production

@@ -36,7 +36,21 @@ export async function getScriptUrlFromFirebase(userId) {
     const userDoc = await getDoc(userDocRef);
     
     if (userDoc.exists() && userDoc.data().googleScriptUrl) {
-      const url = userDoc.data().googleScriptUrl;
+      let url = userDoc.data().googleScriptUrl;
+      
+      // Check if the URL is encoded (for backward compatibility)
+      if (userDoc.data().googleScriptUrlEncoded) {
+        // Decode the URL
+        try {
+          url = typeof window !== 'undefined' 
+            ? atob(url) 
+            : Buffer.from(url, 'base64').toString();
+        } catch (decodeError) {
+          console.error("Error decoding URL:", decodeError);
+          // If decoding fails, use the raw value
+        }
+      }
+      
       // Update localStorage with Firebase value
       setScriptUrlInStorage(url);
       return url;
@@ -60,6 +74,10 @@ export async function saveScriptUrl(userId, url) {
   // Update Firebase if user is logged in (for cross-device sync)
   if (userId) {
     try {
+      // Encode the URL to avoid Firebase path validation issues
+      // Using base64 encoding to safely store URLs with special characters
+      const encodedUrl = typeof window !== 'undefined' ? btoa(url) : Buffer.from(url).toString('base64');
+      
       const userDocRef = doc(db, USERS_COLLECTION, userId);
       const userDoc = await getDoc(userDocRef);
       
@@ -67,13 +85,15 @@ export async function saveScriptUrl(userId, url) {
         // Update existing document
         await setDoc(userDocRef, {
           ...userDoc.data(),
-          googleScriptUrl: url,
+          googleScriptUrl: encodedUrl,
+          googleScriptUrlEncoded: true, // Flag to indicate URL is encoded
           updatedAt: new Date()
         }, { merge: true });
       } else {
         // Create new document with settings
         await setDoc(userDocRef, {
-          googleScriptUrl: url,
+          googleScriptUrl: encodedUrl,
+          googleScriptUrlEncoded: true, // Flag to indicate URL is encoded
           createdAt: new Date(),
           updatedAt: new Date()
         });

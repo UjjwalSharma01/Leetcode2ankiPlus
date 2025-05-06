@@ -13,7 +13,14 @@ import * as animationDataImport from './coding-animation.json';
 // Dynamically import Lottie with no SSR to prevent "document is not defined" errors
 const Lottie = dynamic(() => import('react-lottie'), {
   ssr: false,
-  loading: () => <p>Loading...</p>
+  loading: () => (
+    <div className="flex items-center justify-center h-full w-full">
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-green-400 to-blue-500 blur-md opacity-70 animate-pulse"></div>
+        <div className="relative animate-spin rounded-full h-10 w-10 border-4 border-t-green-500 border-r-blue-500 border-b-green-500 border-l-blue-500 border-opacity-30"></div>
+      </div>
+    </div>
+  )
 });
 
 // Animated code particles component with proper mobile handling

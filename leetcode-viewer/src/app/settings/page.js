@@ -3,209 +3,265 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { getScriptUrlFromStorage, saveScriptUrl } from '@/utils/scriptUrlManager';
 import { useData } from '@/context/DataContext';
 import AuthLayout from '@/components/AuthLayout';
+import { toast } from 'react-hot-toast';
 
 export default function Settings() {
-  const [scriptUrl, setScriptUrl] = useState('');
-  const [savedUrl, setSavedUrl] = useState('');
-  const [message, setMessage] = useState({ type: '', text: '' });
-  const [saving, setSaving] = useState(false);
-  const router = useRouter();
   const { user } = useAuth();
-  const { lastFetched, refreshData } = useData();
-
+  const { refreshData } = useData();
+  const router = useRouter();
+  
+  const [scriptUrl, setScriptUrl] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+  
   useEffect(() => {
-    // Load saved URL from localStorage on component mount
-    const savedValue = getScriptUrlFromStorage();
-    setScriptUrl(savedValue);
-    setSavedUrl(savedValue);
-    
-    // Check for notification in sessionStorage from redirects
-    if (typeof window !== 'undefined') {
-      const notification = sessionStorage.getItem('notification');
-      if (notification) {
-        try {
-          const notificationData = JSON.parse(notification);
-          setMessage({ 
-            type: notificationData.type === 'warning' ? 'error' : notificationData.type, 
-            text: notificationData.message 
-          });
-          // Remove the notification after displaying it
-          sessionStorage.removeItem('notification');
-        } catch (e) {
-          console.error('Error parsing notification:', e);
-        }
-      }
-    }
-  }, []);
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    try {
-      setSaving(true);
-      setMessage({ type: '', text: '' });
-      
-      // Clean URL and ensure no trailing slash
-      const cleanUrl = scriptUrl.trim();
-      const testUrl = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=getProblems`;
-      
-      console.log("Testing connection to:", testUrl);
-      
+    // Load script URL from storage on component mount
+    const loadScriptUrl = async () => {
       try {
-        // Use axios which automatically follows redirects
-        const response = await axios.get(testUrl, {
-          headers: {
-            'Accept': 'application/json, text/plain, */*',
-          },
-          timeout: 30000,
-          maxRedirects: 5,
-          withCredentials: false,
-        });
-        
-        console.log("Response status:", response.status);
-        console.log("Response type:", typeof response.data);
-        
-        // Check if we got a valid response
-        let isValidResponse = false;
-        
-        if (response.status === 200) {
-          // Case 1: JSON response with problems array
-          if (response.data && response.data.problems) {
-            console.log(`Found ${response.data.problems.length} problems in response`);
-            isValidResponse = true;
-          }
-          // Case 2: Direct array in the response
-          else if (Array.isArray(response.data)) {
-            console.log(`Found ${response.data.length} problems in response array`);
-            isValidResponse = true;
-          }
-          // Case 3: Contains "success" text or status parameter
-          else if (
-            (typeof response.data === 'object' && (response.data.success || response.data.status === 'online')) ||
-            (typeof response.data === 'string' && response.data.includes('success'))
-          ) {
-            console.log("Found success indicator in response");
-            isValidResponse = true;
-          }
+        const savedUrl = await getScriptUrlFromStorage();
+        if (savedUrl) {
+          setScriptUrl(savedUrl);
         }
-        
-        if (!isValidResponse) {
-          console.warn("Invalid response from Google Apps Script:", response.data);
-          throw new Error("Google Apps Script returned an invalid response. Make sure your script ID is correct.");
+      } catch (error) {
+        console.error('Failed to load script URL:', error);
+      }
+    };
+    
+    loadScriptUrl();
+  }, []);
+  
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Pass the user ID correctly to the saveScriptUrl function
+      await saveScriptUrl(user?.uid, scriptUrl);
+      toast.success('Script URL saved successfully');
+      // Refresh data to reflect potential new data from the script
+      refreshData();
+    } catch (error) {
+      console.error('Failed to save script URL:', error);
+      toast.error('Failed to save script URL');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
+  const handleTest = async () => {
+    setIsTesting(true);
+    setTestResult(null);
+    
+    try {
+      // Simple check to see if the URL responds
+      const response = await axios.get('/api/proxy', {
+        params: {
+          url: scriptUrl
         }
-        
-        // Save to both Firebase (if user is logged in) and localStorage
-        await saveScriptUrl(user?.uid || null, cleanUrl);
-        
-        setSavedUrl(cleanUrl);
-        setMessage({ 
-          type: 'success', 
-          text: user ? 'Settings saved successfully! Your settings will sync across all your devices.' : 'Settings saved successfully! Google Apps Script connection is working.' 
+      });
+      
+      if (response.data && response.status === 200) {
+        setTestResult({
+          success: true,
+          message: 'Successfully connected to the script URL'
         });
-        
-        // Refresh data after successfully updating the script URL
-        refreshData();
-        
-      } catch (fetchError) {
-        console.error("Fetch error:", fetchError);
-        throw new Error(`Connection error: ${fetchError.message}`);
+        toast.success('Connection successful!');
+      } else {
+        throw new Error('Invalid response');
       }
     } catch (error) {
-      console.error('Error saving settings:', error);
-      setMessage({ 
-        type: 'error', 
-        text: `${error.message}. Make sure your Apps Script is deployed as a web app with 'Anyone' access.` 
+      console.error('Failed to test script URL:', error);
+      setTestResult({
+        success: false,
+        message: 'Could not connect to the script URL. Please check it and try again.'
       });
+      toast.error('Connection failed. Please check URL.');
     } finally {
-      setSaving(false);
+      setIsTesting(false);
     }
   };
 
   return (
     <AuthLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Settings</h1>
+      <div className="px-4 py-6 space-y-8 settings-page">
+        {/* Header with subtle gradient background */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-premium p-6 mb-8">
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 h-32 w-32 rounded-full bg-blue-500/10 filter blur-xl"></div>
+          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 h-24 w-24 rounded-full bg-green-500/10 filter blur-xl"></div>
           
-          <form onSubmit={handleSave}>
-            <div className="mb-6">
-              <label htmlFor="scriptUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Google Apps Script URL
-              </label>
-              <input
-                type="url"
-                id="scriptUrl"
-                value={scriptUrl}
-                onChange={(e) => setScriptUrl(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="https://script.google.com/macros/s/..."
-                required
-              />
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Enter the URL of your deployed Google Apps Script web app.
-                {user && " Your settings will sync across all your devices."}
-              </p>
-            </div>
-            
-            {message.text && (
-              <div className={`p-4 mb-4 rounded-md ${message.type === 'success' ? 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200' : 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200'}`}>
-                {message.text}
-              </div>
-            )}
-            
-            <div className="flex justify-between items-center">
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {saving ? 'Testing Connection...' : 'Save Settings'}
-              </button>
-              
-              {savedUrl && (
-                <button
-                  type="button"
-                  onClick={() => router.push('/problems')}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                >
-                  View Problems
-                </button>
-              )}
-            </div>
-          </form>
-          
-          <div className="mt-6">
-            {lastFetched && (
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
-                Last updated: {new Date(lastFetched).toLocaleString()}
-              </div>
-            )}
+          <div className="relative z-10">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white bg-clip-text bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300">
+              Settings
+            </h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-300 max-w-3xl">
+              Configure your LeetCode2AnkiPlus integration settings
+            </p>
           </div>
-          
-          <div className="mt-10 border-t border-gray-200 dark:border-gray-700 pt-6">
-            <h2 className="text-lg font-medium text-gray-800 dark:text-white mb-4">Help</h2>
-            <div className="prose dark:prose-invert max-w-none">
-              <p>To use this app, you need to:</p>
-              <ol className="list-decimal pl-6 space-y-2">
-                <li>
-                  Deploy the <code className="bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded">GoogleAppsScript.gs</code> file 
-                  as a web app in Google Apps Script.
-                </li>
-                <li>
-                  Set the script to be accessible to &quot;Anyone, even anonymous&quot;.
-                </li>
-                <li>
-                  Copy the deployed web app URL and paste it here.
-                </li>
-              </ol>
-              <p className="mt-4">
-                When you click &quot;Save Settings&quot;, the app will test the connection to 
-                make sure it can access your Google Sheet data.
-              </p>
+        </div>
+
+        {/* Main content */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-6">
+          {/* Sidebar with information */}
+          <div className="lg:col-span-1">
+            <div className="bg-white dark:bg-gray-800 overflow-hidden rounded-xl shadow-card border border-gray-100 dark:border-gray-700 p-6 sticky top-20">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">About Integration</h2>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  LeetCode2AnkiPlus uses a Google Apps Script to integrate with your Google Sheets.
+                </p>
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                  <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 flex items-center">
+                    <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Important Note
+                  </h3>
+                  <p className="mt-2 text-xs text-blue-700 dark:text-blue-300">
+                    You need to deploy your script as a web application and use the web app URL. Make sure it's accessible to anyone (even anonymous) and properly configured for requests.
+                  </p>
+                </div>
+                <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
+                  <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700">
+                    <h4 className="text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Need Help?</h4>
+                  </div>
+                  <div className="px-4 py-3">
+                    <a 
+                      href="https://github.com/UjjwalSharma01/Leetcode2ankiPlus/blob/master/README.md" 
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View Documentation
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main settings form */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white dark:bg-gray-800 overflow-hidden rounded-xl shadow-card border border-gray-100 dark:border-gray-700 p-6">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">LeetCode Script Configuration</h2>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="script-url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Google Apps Script Web App URL
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="script-url"
+                      name="script-url"
+                      type="text"
+                      className="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md transition-all duration-200"
+                      placeholder="https://script.google.com/macros/s/your-script-id/exec"
+                      value={scriptUrl}
+                      onChange={(e) => setScriptUrl(e.target.value)}
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Enter the URL from your deployed Google Apps Script web app
+                  </p>
+                </div>
+
+                {testResult && (
+                  <div className={`p-4 rounded-lg ${
+                    testResult.success 
+                      ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-100 dark:border-green-800' 
+                      : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border border-red-100 dark:border-red-800'
+                  }`}>
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        {testResult.success ? (
+                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm">{testResult.message}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={handleTest}
+                    disabled={!scriptUrl || isTesting}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200"
+                  >
+                    {isTesting ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Testing...
+                      </>
+                    ) : (
+                      <>Test Connection</>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={!scriptUrl || isSaving}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-md text-white bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 transition-all duration-200 hover:shadow-lg transform hover:scale-105 active:scale-95"
+                  >
+                    {isSaving ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                      </>
+                    ) : (
+                      <>Save Settings</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* App Information Card */}
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 overflow-hidden rounded-xl shadow-card border border-gray-100 dark:border-gray-700 p-6">
+              <div className="flex items-center">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center shadow-md">
+                  <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-white">About LeetCode2AnkiPlus</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Version 1.0</p>
+                </div>
+              </div>
+              <div className="mt-4 text-sm text-gray-600 dark:text-gray-300">
+                <p>LeetCode2AnkiPlus helps you track your LeetCode problem-solving journey and create spaced repetition reviews.</p>
+              </div>
+              <div className="mt-4 flex">
+                <a 
+                  href="https://github.com/UjjwalSharma01/Leetcode2ankiPlus"
+                  className="inline-flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Visit Project Page
+                  <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </a>
+              </div>
             </div>
           </div>
         </div>

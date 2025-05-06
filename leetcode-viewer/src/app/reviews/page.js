@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AuthLayout from '@/components/AuthLayout';
 import Link from 'next/link';
 import { completeReview } from '@/utils/reviewService';
@@ -9,17 +9,43 @@ import { useData } from '@/context/DataContext';
 export default function ReviewsPage() {
   const { 
     dueReviews, 
+    upcomingReviews,
     reviewsLoading, 
+    upcomingReviewsLoading,
     reviewsError, 
     refreshReviews, 
+    refreshUpcomingReviews,
     refreshAllData, 
     lastReviewsFetched,
+    loadUpcomingReviews,
     globalSyncId
   } = useData();
   
   const [activeReview, setActiveReview] = useState(null);
   const [completed, setCompleted] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [showUpcoming, setShowUpcoming] = useState(false); // Toggle state for showing upcoming/due reviews
+  const [customDays, setCustomDays] = useState(0); // Add state for custom days input
+  const [showCustomDays, setShowCustomDays] = useState(false); // Toggle for custom days input
+  const fetchingInProgress = useRef(false); // Add a ref to track if a fetch is in progress
+  
+  // Load upcoming reviews from DataContext when component mounts or when globalSyncId changes
+  useEffect(() => {
+    // Only call if not already loading and data is actually needed
+    if (!upcomingReviewsLoading && 
+        upcomingReviews.length === 0 && 
+        !reviewsLoading && 
+        !fetchingInProgress.current) {
+      fetchingInProgress.current = true;
+      // Add a small delay to allow multiple components to initialize before triggering fetch
+      const timer = setTimeout(() => {
+        loadUpcomingReviews();
+        fetchingInProgress.current = false;
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [loadUpcomingReviews, upcomingReviewsLoading, upcomingReviews.length, reviewsLoading, globalSyncId]);
 
   // Update the timestamp when reviews data changes
   useEffect(() => {
@@ -48,12 +74,21 @@ export default function ReviewsPage() {
     if (!activeReview) return;
     
     try {
-      await completeReview(activeReview, difficulty);
+      // If difficulty is 'custom', pass the custom days as nextInterval
+      if (difficulty === 'custom') {
+        if (customDays < 1) return; // Safety check
+        await completeReview(activeReview, difficulty, true, customDays);
+      } else {
+        await completeReview(activeReview, difficulty);
+      }
       
       // Update local completed state
       const newCompleted = [...completed, activeReview.id];
       setCompleted(newCompleted);
       setActiveReview(null);
+      
+      // Reset custom days input
+      setShowCustomDays(false);
       
       // Save completed state in sessionStorage
       try {
@@ -78,7 +113,49 @@ export default function ReviewsPage() {
     refreshReviews();
   };
 
-  if (reviewsLoading && dueReviews.length === 0) {
+  const toggleReviewMode = () => {
+    setShowUpcoming(!showUpcoming);
+  };
+
+  // Format relative date for upcoming reviews
+  const formatRelativeDate = (dateStr) => {
+    if (!dateStr) return 'Unknown date';
+    
+    // Handle both string dates and Date objects
+    const date = dateStr instanceof Date ? dateStr : new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      console.error("Invalid date string:", dateStr);
+      return 'Invalid date';
+    }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const dayAfterTomorrow = new Date(today);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+    
+    const diffTime = date - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return 'Today';
+    } else if (diffDays === 1) {
+      return 'Tomorrow';
+    } else if (diffDays === 2) {
+      return 'Day after tomorrow';
+    } else if (diffDays <= 7) {
+      return `In ${diffDays} days`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  const isLoading = reviewsLoading || upcomingReviewsLoading;
+
+  if (isLoading && dueReviews.length === 0 && upcomingReviews.length === 0) {
     return (
       <AuthLayout>
         <div className="flex justify-center items-center min-h-[60vh]">
@@ -99,30 +176,43 @@ export default function ReviewsPage() {
             </p>
           </div>
           
-          {/* Refresh Button */}
-          <button
-            onClick={refreshReviews}
-            disabled={reviewsLoading}
-            className="self-start sm:self-auto inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 dark:bg-green-700 dark:hover:bg-green-600"
-            title="Refresh reviews"
-          >
-            {reviewsLoading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Refreshing...
-              </>
-            ) : (
-              <>
-                <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Refresh
-              </>
-            )}
-          </button>
+          <div className="flex space-x-2">
+            {/* Toggle Button - Always visible regardless of review state */}
+            <button
+              onClick={toggleReviewMode}
+              className={`self-start sm:self-auto inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm 
+                ${showUpcoming 
+                  ? 'text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-300' 
+                  : 'text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300'}`}
+            >
+              {showUpcoming ? 'Show Due Today' : 'Show Upcoming'}
+            </button>
+            
+            {/* Refresh Button */}
+            <button
+              onClick={() => refreshAllData()}
+              disabled={isLoading}
+              className="self-start sm:self-auto inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 dark:bg-green-700 dark:hover:bg-green-600"
+              title="Refresh reviews"
+            >
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh
+                </>
+              )}
+            </button>
+          </div>
         </div>
     
         {reviewsError && (
@@ -160,22 +250,28 @@ export default function ReviewsPage() {
               <p className="mb-4 font-medium text-gray-800 dark:text-gray-200">How difficult was this problem for you?</p>
               <div className="flex flex-wrap gap-2">
                 <button 
-                  onClick={() => handleReviewComplete('easy')} 
+                  onClick={() => !showCustomDays && handleReviewComplete('easy')} 
                   className="px-4 py-3 sm:py-2 bg-green-500 hover:bg-green-600 text-white dark:bg-green-600 dark:hover:bg-green-500 rounded transition-colors w-full sm:w-auto min-h-[44px]"
                 >
                   Easy
                 </button>
                 <button 
-                  onClick={() => handleReviewComplete('medium')} 
+                  onClick={() => !showCustomDays && handleReviewComplete('medium')} 
                   className="px-4 py-3 sm:py-2 bg-yellow-500 hover:bg-yellow-600 text-white dark:bg-yellow-600 dark:hover:bg-yellow-500 rounded transition-colors w-full sm:w-auto min-h-[44px]"
                 >
                   Medium
                 </button>
                 <button 
-                  onClick={() => handleReviewComplete('hard')} 
+                  onClick={() => !showCustomDays && handleReviewComplete('hard')} 
                   className="px-4 py-3 sm:py-2 bg-red-500 hover:bg-red-600 text-white dark:bg-red-600 dark:hover:bg-red-500 rounded transition-colors w-full sm:w-auto min-h-[44px]"
                 >
                   Hard
+                </button>
+                <button 
+                  onClick={() => setShowCustomDays(!showCustomDays)} 
+                  className="px-4 py-3 sm:py-2 bg-blue-500 hover:bg-blue-600 text-white dark:bg-blue-600 dark:hover:bg-blue-500 rounded transition-colors w-full sm:w-auto min-h-[44px]"
+                >
+                  {showCustomDays ? 'Hide Custom Days' : 'Custom Days'}
                 </button>
                 <button 
                   onClick={handleSkip} 
@@ -184,20 +280,58 @@ export default function ReviewsPage() {
                   Skip
                 </button>
               </div>
+              
+              {showCustomDays && (
+                <div className="mt-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md">
+                  <div className="mb-4">
+                    <label htmlFor="customDaysInput" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Specify number of days until next review:
+                    </label>
+                    <input
+                      id="customDaysInput"
+                      type="number"
+                      min="1"
+                      value={customDays}
+                      onChange={(e) => setCustomDays(parseInt(e.target.value) || 0)}
+                      className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:w-40 text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button 
+                      onClick={() => handleReviewComplete('custom')}
+                      disabled={customDays < 1}
+                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white dark:bg-blue-600 dark:hover:bg-blue-500 rounded transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Schedule in {customDays > 0 ? customDays : 'X'} days
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : (
           <>
-            {reviewsLoading && dueReviews.length > 0 && (
+            {isLoading && (dueReviews.length > 0 || upcomingReviews.length > 0) && (
               <div className="mb-4 text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 <div className="animate-spin h-4 w-4 mr-2 border-t-2 border-b-2 border-green-500 dark:border-green-400 rounded-full"></div>
                 Refreshing...
               </div>
             )}
-          
-            {dueReviews.length > 0 ? (
+
+            {/* Review Section - Toggles between Due Today and Upcoming */}
+            {!showUpcoming && dueReviews.length > 0 ? (
               <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6 mb-6">
-                <h2 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">Due for Review ({dueReviews.length})</h2>
+                <h2 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">
+                  <span className="inline-block bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 px-2 py-1 rounded-md mr-2">
+                    Due Today
+                  </span>
+                  <span>({dueReviews.length})</span>
+                  {upcomingReviews.length > 0 && (
+                    <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                      (+ {upcomingReviews.length} upcoming)
+                    </span>
+                  )}
+                </h2>
                 
                 {/* Mobile view - card layout */}
                 <div className="sm:hidden space-y-4">
@@ -252,15 +386,91 @@ export default function ReviewsPage() {
                   </table>
                 </div>
               </div>
+            ) : showUpcoming && upcomingReviews.length > 0 ? (
+              <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6 mb-6">
+                <h2 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">
+                  <span className="inline-block bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 px-2 py-1 rounded-md mr-2">
+                    Upcoming
+                  </span>
+                  <span>({upcomingReviews.length})</span>
+                  {dueReviews.length > 0 && (
+                    <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                      ({dueReviews.length} due today)
+                    </span>
+                  )}
+                </h2>
+                
+                {/* Mobile view - card layout for Upcoming Reviews */}
+                <div className="sm:hidden space-y-4">
+                  {upcomingReviews.map(problem => {
+                    // Get ID and title safely, handling different property names
+                    const id = problem.ID || problem.Id || problem.id || "N/A";
+                    const title = problem.Title || problem.title || "Untitled";
+                    const nextReviewDate = problem['Next Review Date'] || problem.nextReviewDate;
+                    
+                    return (
+                      <div key={id} className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-md">
+                        <div className="font-medium text-gray-900 dark:text-gray-100 break-words">
+                          {title}
+                        </div>
+                        <div className="mt-1 text-sm text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-2">
+                          <span>Problem #{id}</span>
+                          <span>•</span>
+                          <span>{formatRelativeDate(nextReviewDate)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* Desktop view - table layout for Upcoming Reviews */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Title</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Due Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {upcomingReviews.map(problem => {
+                        // Get ID and title safely, handling different property names
+                        const id = problem.ID || problem.Id || problem.id || "N/A";
+                        const title = problem.Title || problem.title || "Untitled";
+                        const nextReviewDate = problem['Next Review Date'] || problem.nextReviewDate;
+                        
+                        return (
+                          <tr key={id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200">
+                              {id}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {title}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {formatRelativeDate(nextReviewDate)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             ) : (
               <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6">
                 <div className="text-center py-8 sm:py-12">
                   <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <h2 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">No Reviews Due</h2>
+                  <h2 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">
+                    {showUpcoming ? "No Upcoming Reviews" : "No Reviews Due Today"}
+                  </h2>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 px-4">
-                    There are no problems scheduled for review at this time.
+                    {showUpcoming 
+                      ? "There are no problems scheduled for future review." 
+                      : "There are no problems due for review today."}
                   </p>
                   <div className="mt-6">
                     <Link href="/problems" className="inline-flex items-center px-4 py-3 sm:py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 transition-colors min-h-[44px]">
