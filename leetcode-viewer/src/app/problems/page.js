@@ -298,43 +298,57 @@ export default function ProblemsPage() {
       )}
       
       <div className="px-4 py-6">
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">LeetCode Problems</h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-300">
-              Browse and filter your LeetCode problems
-            </p>
-          </div>
+        {/* Premium Header with gradient background */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-premium p-6 mb-8">
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 h-32 w-32 rounded-full bg-blue-500/10 filter blur-xl"></div>
+          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 h-24 w-24 rounded-full bg-green-500/10 filter blur-xl"></div>
           
-          {/* Refresh Button */}
-          <button
-            onClick={refreshData}
-            disabled={loading}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-            title="Refresh data"
-          >
-            {loading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Refreshing...
-              </>
-            ) : (
-              <>
-                <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Refresh
-              </>
-            )}
-          </button>
+          <div className="relative z-10 flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white bg-clip-text bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300">
+                LeetCode Problems
+              </h1>
+              <p className="mt-2 text-gray-600 dark:text-gray-300">
+                Browse and filter your LeetCode problems
+              </p>
+            </div>
+            
+            {/* Refresh Button */}
+            <button
+              onClick={refreshData}
+              disabled={loading}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-md text-white bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 transition-all duration-200 hover:shadow-lg transform hover:scale-105 active:scale-95"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh
+                </>
+              )}
+            </button>
+          </div>
         </div>
         
         {loading && !problems.length ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500 dark:border-green-400"></div>
+          // Enhanced loading state with pulse animation
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="w-24 h-24 relative">
+              <div className="animate-spin rounded-full h-24 w-24 border-t-2 border-b-2 border-green-500 dark:border-green-400"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-12 w-12 rounded-full bg-white dark:bg-gray-800 animate-pulse"></div>
+              </div>
+            </div>
+            <p className="mt-4 text-gray-600 dark:text-gray-300 text-sm animate-pulse">Loading problems...</p>
           </div>
         ) : error ? (
           <div className="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4">
@@ -351,20 +365,31 @@ export default function ProblemsPage() {
           </div>
         ) : (
           <>
-            {/* Filters and Search - Responsive redesign */}
-            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6 mb-6">
+            {/* Filters and Search - Enhanced premium styling */}
+            <div className="bg-white dark:bg-gray-800 shadow-premium overflow-hidden rounded-xl border border-gray-100 dark:border-gray-700 p-4 sm:p-6 mb-6">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                <svg className="mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                Filters
+              </h2>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {/* Search - Full width on mobile */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-1">
                   <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Search
                   </label>
-                  <div className="mt-1">
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-4 w-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
                     <input
                       type="text"
                       name="search"
                       id="search"
-                      className="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full py-3 sm:py-2 pl-3 pr-10 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md min-h-[44px]"
+                      className="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full py-3 sm:py-2 pl-10 pr-3 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md min-h-[44px] transition-all duration-200"
                       placeholder="Search by title or ID"
                       value={filters.searchTerm}
                       onChange={handleSearchChange}
@@ -377,18 +402,25 @@ export default function ProblemsPage() {
                   <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Difficulty
                   </label>
-                  <select
-                    id="difficulty"
-                    name="difficulty"
-                    className="mt-1 block w-full pl-3 pr-10 py-3 sm:py-2 text-base sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 rounded-md min-h-[44px]"
-                    value={filters.difficulty}
-                    onChange={handleDifficultyChange}
-                  >
-                    <option value="all">All Difficulties</option>
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
-                  </select>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <select
+                      id="difficulty"
+                      name="difficulty"
+                      className="mt-1 block w-full pl-3 pr-10 py-3 sm:py-2 text-base sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 rounded-md min-h-[44px] transition-all duration-200"
+                      value={filters.difficulty}
+                      onChange={handleDifficultyChange}
+                    >
+                      <option value="all">All Difficulties</option>
+                      <option value="Easy">Easy</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Hard">Hard</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg className="h-4 w-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
                 
                 {/* Sort */}
@@ -397,21 +429,28 @@ export default function ProblemsPage() {
                     Sort By
                   </label>
                   <div className="mt-1 flex">
-                    <select
-                      id="sort"
-                      name="sort"
-                      className="block w-full pl-3 pr-10 py-3 sm:py-2 text-base sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 rounded-l-md min-h-[44px]"
-                      value={sortBy}
-                      onChange={handleSortChange}
-                    >
-                      <option value="date">Date Added</option>
-                      <option value="id">Problem ID</option>
-                      <option value="title">Title</option>
-                      <option value="difficulty">Difficulty</option>
-                    </select>
+                    <div className="relative rounded-md shadow-sm flex-grow">
+                      <select
+                        id="sort"
+                        name="sort"
+                        className="block w-full pl-3 pr-10 py-3 sm:py-2 text-base sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 rounded-l-md min-h-[44px] transition-all duration-200"
+                        value={sortBy}
+                        onChange={handleSortChange}
+                      >
+                        <option value="date">Date Added</option>
+                        <option value="id">Problem ID</option>
+                        <option value="title">Title</option>
+                        <option value="difficulty">Difficulty</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <svg className="h-4 w-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                        </svg>
+                      </div>
+                    </div>
                     <button
                       type="button"
-                      className="inline-flex items-center justify-center px-4 sm:px-3 border border-l-0 border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm text-sm leading-4 font-medium rounded-r-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 min-h-[44px]"
+                      className="inline-flex items-center justify-center px-4 sm:px-3 border border-l-0 border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm text-sm leading-4 font-medium rounded-r-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 min-h-[44px] transition-all duration-200"
                       onClick={handleSortDirectionChange}
                     >
                       {sortDirection === 'asc' ? (
@@ -432,7 +471,7 @@ export default function ProblemsPage() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Results
                   </label>
-                  <div className="mt-1 flex min-h-[44px] items-center">
+                  <div className="mt-1 flex min-h-[44px] items-center px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-md">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       Showing <span className="font-medium text-gray-900 dark:text-white">{currentProblems.length}</span> of{' '}
                       <span className="font-medium text-gray-900 dark:text-white">{sortedProblems.length}</span> problems
@@ -441,10 +480,15 @@ export default function ProblemsPage() {
                 </div>
               </div>
               
-              {/* Tags - Collapsible on mobile */}
-              <div className="mt-6">
+              {/* Tags - Collapsible on mobile with improved styling */}
+              <div className="mt-6 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Tags</h3>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                    <svg className="mr-2 h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    Tags
+                  </h3>
                   <button 
                     type="button"
                     onClick={() => {
@@ -452,7 +496,7 @@ export default function ProblemsPage() {
                       tagsSection.classList.toggle('hidden');
                       tagsSection.classList.toggle('flex');
                     }}
-                    className="md:hidden text-green-600 dark:text-green-400 text-sm flex items-center"
+                    className="md:hidden text-green-600 dark:text-green-400 text-sm flex items-center hover:text-green-700 dark:hover:text-green-300 transition-colors duration-200"
                     aria-expanded="false"
                   >
                     <span className="mr-1">Toggle Tags</span>
@@ -461,16 +505,16 @@ export default function ProblemsPage() {
                     </svg>
                   </button>
                 </div>
-                <div id="tags-section" className="hidden md:flex flex-wrap gap-2 mt-2">
+                <div id="tags-section" className="hidden md:flex flex-wrap gap-2 mt-3">
                   {allTags.map((tag) => (
                     <button
                       key={tag}
                       type="button"
                       onClick={() => handleTagToggle(tag)}
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium min-h-[30px] ${
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium min-h-[30px] transition-all duration-200 hover:shadow-sm ${
                         filters.tags.includes(tag)
-                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 ring-1 ring-green-400 dark:ring-green-500'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
                       {tag}
@@ -480,16 +524,16 @@ export default function ProblemsPage() {
               </div>
             </div>
             
-            {/* Problems Table/Cards - Responsive design */}
-            <div className="bg-white dark:bg-gray-800 shadow overflow-hidden rounded-lg">
-              {/* Bulk Actions Button */}
-              <div className="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+            {/* Problems Table/Cards - Enhanced premium styling */}
+            <div className="bg-white dark:bg-gray-800 shadow-premium overflow-hidden rounded-xl border border-gray-100 dark:border-gray-700">
+              {/* Bulk Actions Button with premium styling */}
+              <div className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-600">
                 <div className="flex flex-wrap justify-between items-center gap-2">
                   <div className="flex items-center">
                     <button
                       onClick={toggleSelectAll}
-                      className={`mr-3 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium 
-                      ${selectedProblemIds.length > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                      className={`mr-3 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-sm
+                      ${selectedProblemIds.length > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                     >
                       {selectedProblemIds.length === currentProblems.length && currentProblems.length > 0 
                         ? 'Deselect All' 
@@ -504,17 +548,17 @@ export default function ProblemsPage() {
                   
                   <button
                     onClick={() => setShowBulkActions(!showBulkActions)}
-                    className={`px-4 py-2 rounded-md border border-transparent text-sm font-medium shadow-sm
+                    className={`px-4 py-2 rounded-md border text-sm font-medium shadow-sm transition-all duration-200 transform hover:scale-105 active:scale-95
                     ${showBulkActions 
-                      ? 'bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200' 
-                      : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                      ? 'bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-500' 
+                      : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 border-transparent hover:shadow'}`}
                   >
                     {showBulkActions ? 'Hide Bulk Actions' : 'Bulk Actions'}
                   </button>
                 </div>
                 
                 {showBulkActions && (
-                  <div className="mt-4">
+                  <div className="mt-4 p-4 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
                     <BulkReviewActions 
                       problems={problems} 
                       selectedIds={selectedProblemIds}
@@ -527,10 +571,10 @@ export default function ProblemsPage() {
                 )}
               </div>
               
-              {/* Desktop view - Traditional table */}
+              {/* Desktop view - Traditional table with enhanced styling */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
+                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
                     <tr>
                       <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-10">
                         <span className="sr-only">Select</span>
@@ -560,7 +604,7 @@ export default function ProblemsPage() {
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {currentProblems.map((problem, index) => (
-                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
                         <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-center">
                           <input
                             type="checkbox"
@@ -573,12 +617,12 @@ export default function ProblemsPage() {
                           {problem.ID}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                          <a href={problem.URL} target="_blank" rel="noopener noreferrer" className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 hover:underline break-words">
+                          <a href={problem.URL} target="_blank" rel="noopener noreferrer" className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 hover:underline break-words transition-colors duration-200 font-medium">
                             {problem.Title}
                           </a>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full shadow-sm
                             ${problem.Difficulty === 'Easy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
                              problem.Difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
                              'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
@@ -588,7 +632,7 @@ export default function ProblemsPage() {
                         <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
                           <div className="flex flex-wrap gap-1">
                             {problem.Tags?.split(',').map((tag, i) => (
-                              <span key={i} className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
+                              <span key={i} className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 shadow-sm">
                                 {tag.trim()}
                               </span>
                             ))}
@@ -609,17 +653,36 @@ export default function ProblemsPage() {
                               setShowDaysModal(true);
                             }}
                             disabled={addingToReview[problem.ID]}
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 hover:shadow transform hover:scale-105 active:scale-95"
                           >
-                            {addingToReview[problem.ID] ? 'Adding...' : 'Add to Review'}
+                            {addingToReview[problem.ID] ? (
+                              <>
+                                <svg className="animate-spin -ml-0.5 mr-1.5 h-3 w-3 text-white" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Adding...
+                              </>
+                            ) : 'Add to Review'}
                           </button>
                         </td>
                       </tr>
                     ))}
                     {currentProblems.length === 0 && (
                       <tr>
-                        <td colSpan="8" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                          No problems found matching your filters
+                        <td colSpan="8" className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                          <div className="flex flex-col items-center">
+                            <svg className="h-10 w-10 text-gray-400 dark:text-gray-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 16h.01M19 21H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2z" />
+                            </svg>
+                            <p>No problems found matching your filters</p>
+                            <button 
+                              onClick={() => setFilters({searchTerm: '', difficulty: 'all', tags: []})}
+                              className="mt-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
+                            >
+                              Clear filters
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )}
@@ -627,10 +690,10 @@ export default function ProblemsPage() {
                 </table>
               </div>
               
-              {/* Mobile view - Card layout */}
+              {/* Mobile view - Card layout with enhanced styling */}
               <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
                 {currentProblems.map((problem, index) => (
-                  <div key={index} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <div key={index} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center">
                         <div className="mr-2">
@@ -642,7 +705,7 @@ export default function ProblemsPage() {
                           />
                         </div>
                         <span className="text-sm font-medium text-gray-900 dark:text-white mr-2">#{problem.ID}</span>
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full shadow-sm
                           ${problem.Difficulty === 'Easy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
                           problem.Difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
                           'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
@@ -658,7 +721,7 @@ export default function ProblemsPage() {
                       href={problem.URL} 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      className="text-base font-medium text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 hover:underline block mb-2 ml-7"
+                      className="text-base font-medium text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 hover:underline block mb-2 ml-7 transition-colors duration-200"
                     >
                       {problem.Title}
                     </a>
@@ -668,7 +731,7 @@ export default function ProblemsPage() {
                         <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tags:</div>
                         <div className="flex flex-wrap gap-1">
                           {problem.Tags.split(',').map((tag, i) => (
-                            <span key={i} className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
+                            <span key={i} className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 shadow-sm">
                               {tag.trim()}
                             </span>
                           ))}
@@ -692,50 +755,91 @@ export default function ProblemsPage() {
                           setShowDaysModal(true);
                         }}
                         disabled={addingToReview[problem.ID]}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 hover:shadow transform hover:scale-105 active:scale-95"
                       >
-                        {addingToReview[problem.ID] ? 'Adding...' : 'Add to Review'}
+                        {addingToReview[problem.ID] ? (
+                          <>
+                            <svg className="animate-spin -ml-0.5 mr-1.5 h-3 w-3 text-white" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Adding...
+                          </>
+                        ) : 'Add to Review'}
                       </button>
                     </div>
                   </div>
                 ))}
                 
                 {currentProblems.length === 0 && (
-                  <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                    No problems found matching your filters
+                  <div className="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex flex-col items-center">
+                      <svg className="h-10 w-10 text-gray-400 dark:text-gray-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 16h.01M19 21H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2z" />
+                      </svg>
+                      <p>No problems found matching your filters</p>
+                      <button 
+                        onClick={() => setFilters({searchTerm: '', difficulty: 'all', tags: []})}
+                        className="mt-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
+                      >
+                        Clear filters
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
             
-            {/* Pagination */}
-            <div className="mt-6 bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+            {/* Enhanced Pagination with premium styling */}
+            <div className="mt-6 bg-white dark:bg-gray-800 shadow-premium overflow-hidden rounded-xl border border-gray-100 dark:border-gray-700 p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="flex items-center">
-                  <span className="text-sm text-gray-500 dark:text-gray-400 mr-4">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => paginate(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
-                    >
-                      <span className="sr-only">Previous</span>
-                      <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => paginate(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
-                    >
-                      <span className="sr-only">Next</span>
-                      <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4-4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </button>
+                  <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-300 mr-4">
+                      Page <span className="font-medium text-gray-900 dark:text-white">{currentPage}</span> of <span className="font-medium text-gray-900 dark:text-white">{totalPages}</span>
+                    </span>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => paginate(1)}
+                        disabled={currentPage === 1}
+                        className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 transition-all duration-200"
+                        aria-label="First page"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => paginate(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 transition-all duration-200"
+                        aria-label="Previous"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => paginate(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 transition-all duration-200"
+                        aria-label="Next"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => paginate(totalPages)}
+                        disabled={currentPage === totalPages}
+                        className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 transition-all duration-200"
+                        aria-label="Last page"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 
@@ -748,7 +852,7 @@ export default function ProblemsPage() {
                       id="itemsPerPage"
                       value={itemsPerPage}
                       onChange={handleItemsPerPageChange}
-                      className="block min-w-[60px] pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md"
+                      className="block min-w-[60px] pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md transition-all duration-200"
                     >
                       <option value={10}>10</option>
                       <option value={20}>20</option>
@@ -767,7 +871,7 @@ export default function ProblemsPage() {
                         placeholder="Custom"
                         aria-label="Custom items per page"
                         onChange={handleCustomItemsPerPageChange}
-                        className="block w-24 pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md"
+                        className="block w-24 pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md transition-all duration-200"
                       />
                       <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                         <span className="text-gray-400">
@@ -781,21 +885,23 @@ export default function ProblemsPage() {
                 </div>
               </div>
               
-              {/* Mobile view for page numbers */}
+              {/* Enhanced mobile view for pagination info */}
               <div className="mt-4 sm:hidden flex justify-center">
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  Showing <span className="font-medium">{indexOfFirstProblem + 1}</span>
-                  {' '}-{' '}
-                  <span className="font-medium">{Math.min(indexOfLastProblem, sortedProblems.length)}</span>
-                  {' '}of{' '}
-                  <span className="font-medium">{sortedProblems.length}</span> problems
-                </p>
+                <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Showing <span className="font-medium text-gray-900 dark:text-white">{indexOfFirstProblem + 1}</span>
+                    {' '}-{' '}
+                    <span className="font-medium text-gray-900 dark:text-white">{Math.min(indexOfLastProblem, sortedProblems.length)}</span>
+                    {' '}of{' '}
+                    <span className="font-medium text-gray-900 dark:text-white">{sortedProblems.length}</span> problems
+                  </p>
+                </div>
               </div>
             </div>
 
             {lastFetched && (
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
-                Last updated: {new Date(lastFetched).toLocaleString()}
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center bg-white dark:bg-gray-800 rounded-lg py-2 shadow-sm border border-gray-100 dark:border-gray-700">
+                Last updated: <span className="font-medium">{new Date(lastFetched).toLocaleString()}</span>
               </div>
             )}
           </>

@@ -38,7 +38,8 @@ export default function Settings() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await saveScriptUrl(scriptUrl);
+      // Pass the user ID correctly to the saveScriptUrl function
+      await saveScriptUrl(user?.uid, scriptUrl);
       toast.success('Script URL saved successfully');
       // Refresh data to reflect potential new data from the script
       refreshData();
