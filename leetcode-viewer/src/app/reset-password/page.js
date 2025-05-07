@@ -5,13 +5,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function Login() {
+export default function ResetPassword() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { login } = useAuth();
+  const { resetPassword } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -25,10 +25,10 @@ export default function Login() {
     setLoading(true);
     
     try {
-      await login(email, password);
-      router.push('/');
+      await resetPassword(email);
+      setSuccess(true);
     } catch (err) {
-      setError('Failed to login. Please check your credentials.');
+      setError('Failed to send reset email. Please check your email address.');
       console.error(err);
     }
     
@@ -56,14 +56,14 @@ export default function Login() {
             <span className="text-white text-2xl font-bold">L2A+</span>
           </div>
           <h1 className="mt-2 text-center text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300">
-            LeetCode2AnkiPlus
+            Reset Password
           </h1>
           <h2 className="mt-3 text-center text-lg text-gray-600 dark:text-gray-400">
-            Sign in to your account
+            Enter your email address to receive a password reset link
           </h2>
         </div>
         
-        {/* Login Form */}
+        {/* Reset Password Form */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-premium border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300">
           {error && (
             <div className="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4" role="alert">
@@ -80,8 +80,29 @@ export default function Login() {
             </div>
           )}
           
-          <form className="px-6 py-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-5">
+          {success ? (
+            <div className="px-6 py-8 text-center">
+              <div className="rounded-full bg-green-100 dark:bg-green-900/30 w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <svg className="h-8 w-8 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Check your inbox</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                If an account exists with the email <span className="font-medium">{email}</span>,
+                we've sent a password reset link.
+              </p>
+              <div className="flex justify-center">
+                <Link 
+                  href="/login"
+                  className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                >
+                  Return to login
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <form className="px-6 py-8 space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email address</label>
                 <input
@@ -96,61 +117,42 @@ export default function Login() {
                   placeholder="your@email.com"
                 />
               </div>
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
-                  <Link href="/reset-password" className="text-xs font-medium text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300 transition-colors">
-                    Forgot password?
-                  </Link>
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700/50 placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:z-10 text-base shadow-inner-glow transition-all duration-200"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-white bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-900 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.98]"
-              >
-                {loading ? (
-                  <div className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Signing in...
-                  </div>
-                ) : (
-                  <>
-                    <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                      <svg className="h-5 w-5 text-white/60 group-hover:text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-white bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-900 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.98]"
+                >
+                  {loading ? (
+                    <div className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                    </span>
-                    Sign in
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+                      Sending email...
+                    </div>
+                  ) : (
+                    <>
+                      <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <svg className="h-5 w-5 text-white/60 group-hover:text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </span>
+                      Send Reset Link
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
           
           {/* Action links */}
           <div className="px-6 pb-6 text-center text-sm border-t border-gray-200 dark:border-gray-700 pt-4 bg-gray-50 dark:bg-gray-800/50">
             <p className="text-gray-600 dark:text-gray-400">
-              Don&apos;t have an account?{' '}
-              <Link href="/signup" className="font-medium text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300 transition-colors">
-                Sign up here
+              Remember your password?{' '}
+              <Link href="/login" className="font-medium text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300 transition-colors">
+                Sign in
               </Link>
             </p>
           </div>

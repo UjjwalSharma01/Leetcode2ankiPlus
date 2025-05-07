@@ -5,7 +5,8 @@ import {
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
   signOut,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth } from '@/firebase/firebase';
 import { getScriptUrlFromFirebase, getScriptUrlFromStorage } from '@/utils/scriptUrlManager';
@@ -27,6 +28,11 @@ export const AuthProvider = ({ children }) => {
   // Function to register with email and password
   const signup = (email, password) => {
     return createUserWithEmailAndPassword(auth, email, password);
+  };
+
+  // Function to send password reset email
+  const resetPassword = (email) => {
+    return sendPasswordResetEmail(auth, email);
   };
 
   // Function to logout
@@ -73,7 +79,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, resetPassword, loading }}>
       {children}
     </AuthContext.Provider>
   );
