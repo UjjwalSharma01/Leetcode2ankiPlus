@@ -1,12 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { auth } from '@/firebase/firebase';
 
-export default function VerifyEmail() {
+// Loading component for Suspense fallback
+function VerificationLoading() {
+  return (
+    <div className="text-center p-8">
+      <div className="mx-auto h-16 w-16 relative mb-6">
+        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-green-400 to-blue-500 blur-md opacity-70 animate-pulse"></div>
+        <div className="relative animate-spin rounded-full h-16 w-16 border-4 border-t-green-500 border-r-blue-500 border-b-green-500 border-l-blue-500 border-opacity-30"></div>
+      </div>
+      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Initializing verification...</h3>
+      <p className="text-gray-600 dark:text-gray-400">
+        Please wait a moment while we set up your verification process...
+      </p>
+    </div>
+  );
+}
+
+// The actual verification component that uses useSearchParams
+function VerificationContent() {
   const [verificationState, setVerificationState] = useState('verifying'); // 'verifying', 'success', 'error'
   const [errorMessage, setErrorMessage] = useState('');
   const [mounted, setMounted] = useState(false);
@@ -136,6 +153,17 @@ export default function VerifyEmail() {
     }
   };
 
+  return renderContent();
+}
+
+// Main component that wraps VerificationContent in Suspense
+export default function VerifyEmail() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background elements */}
@@ -163,7 +191,9 @@ export default function VerifyEmail() {
         
         {/* Verification Card */}
         <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-premium border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300">
-          {renderContent()}
+          <Suspense fallback={<VerificationLoading />}>
+            <VerificationContent />
+          </Suspense>
         </div>
         
         {/* Footer */}
