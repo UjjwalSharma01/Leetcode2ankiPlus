@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'react-hot-toast';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -31,6 +32,7 @@ export default function Signup() {
       setError('');
       setLoading(true);
       await signup(email, password);
+      toast.success('Account created! Please check your email to verify your account.');
       router.push('/');
     } catch (err) {
       setError('Failed to create an account: ' + (err.message || 'Unknown error'));
@@ -85,7 +87,20 @@ export default function Signup() {
             </div>
           )}
           
-          <form className="px-6 py-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="px-6 pt-6">
+            <div className="flex items-center p-4 border border-blue-100 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="ml-3 text-sm text-blue-700 dark:text-blue-300">
+                Email verification will be required after registration to access all features.
+              </p>
+            </div>
+          </div>
+          
+          <form className="px-6 py-6 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-5">
               <div>
                 <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email address</label>

@@ -10,7 +10,7 @@ import AuthLayout from '@/components/AuthLayout';
 import { toast } from 'react-hot-toast';
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, resendVerificationEmail } = useAuth();
   const { refreshData } = useData();
   const router = useRouter();
   
@@ -18,6 +18,7 @@ export default function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
+  const [isResending, setIsResending] = useState(false);
   
   useEffect(() => {
     // Load script URL from storage on component mount
@@ -84,6 +85,21 @@ export default function Settings() {
     }
   };
 
+  const handleResendVerification = async () => {
+    if (!user || isResending) return;
+    
+    setIsResending(true);
+    try {
+      await resendVerificationEmail(user);
+      toast.success('Verification email sent! Please check your inbox and spam folder.');
+    } catch (error) {
+      console.error('Failed to resend verification email:', error);
+      toast.error('Failed to send verification email. Please try again later.');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   return (
     <AuthLayout>
       <div className="px-4 py-6 space-y-8 settings-page">
@@ -144,6 +160,65 @@ export default function Settings() {
 
           {/* Main settings form */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Account Information Card */}
+            <div className="bg-white dark:bg-gray-800 overflow-hidden rounded-xl shadow-card border border-gray-100 dark:border-gray-700 p-6">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Account Information</h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email || 'Not available'}</p>
+                  </div>
+                  <div className="flex items-center">
+                    {user?.emailVerified ? (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                        <svg className="mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Verified
+                      </span>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                          <svg className="mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          Not Verified
+                        </span>
+                        <button
+                          onClick={handleResendVerification}
+                          disabled={isResending}
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50"
+                        >
+                          {isResending ? 'Sending...' : 'Resend Verification'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Account Status</h3>
+                  <div className="rounded-md bg-gray-50 dark:bg-gray-700/50 p-4">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {user?.emailVerified 
+                            ? 'Your account is fully verified and has access to all features.'
+                            : 'You must verify your email address to access all features of LeetCode2AnkiPlus.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-white dark:bg-gray-800 overflow-hidden rounded-xl shadow-card border border-gray-100 dark:border-gray-700 p-6">
               <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">LeetCode Script Configuration</h2>
               <div className="space-y-4">

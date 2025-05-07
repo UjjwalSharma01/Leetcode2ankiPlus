@@ -4,12 +4,15 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Navbar from './Navbar';
+import Link from 'next/link';
 
 export default function AuthLayout({ children }) {
-  const { user, loading } = useAuth();
+  const { user, loading, resendVerificationEmail } = useAuth();
   const router = useRouter();
   const [isReady, setIsReady] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   useEffect(() => {
     if (!loading) {
@@ -26,6 +29,24 @@ export default function AuthLayout({ children }) {
       }
     }
   }, [loading, user, router]);
+
+  const handleResendEmail = async () => {
+    if (!user || isSending) return;
+    
+    setIsSending(true);
+    try {
+      await resendVerificationEmail(user);
+      setResendSuccess(true);
+      // Reset success message after 5 seconds
+      setTimeout(() => {
+        setResendSuccess(false);
+      }, 5000);
+    } catch (error) {
+      console.error("Failed to resend verification email:", error);
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   if (loading || !isReady) {
     return (
@@ -44,6 +65,64 @@ export default function AuthLayout({ children }) {
 
   if (!user) {
     return null;
+  }
+
+  // Block access if email is not verified
+  if (user && !user.emailVerified) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-premium border border-gray-100 dark:border-gray-700 overflow-hidden p-8">
+          <div className="text-center mb-6">
+            <div className="mx-auto h-16 w-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mb-4">
+              <svg className="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Email Verification Required</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              You need to verify your email address before you can access LeetCode2AnkiPlus.
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              We've sent a verification link to <span className="font-medium">{user.email}</span>
+            </p>
+            
+            {resendSuccess && (
+              <div className="mb-6 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <p className="text-green-700 dark:text-green-400 text-sm">
+                  Verification email sent! Please check your inbox and spam folder.
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <button 
+                onClick={handleResendEmail}
+                disabled={isSending}
+                className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSending ? (
+                  <div className="flex items-center justify-center">
+                    <svg className="animate-spin h-5 w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Sending...
+                  </div>
+                ) : (
+                  "Resend Verification Email"
+                )}
+              </button>
+              <Link 
+                href="/login"
+                className="w-full block text-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-lg font-medium transition-all hover:bg-gray-50 dark:hover:bg-gray-600"
+              >
+                Sign out
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

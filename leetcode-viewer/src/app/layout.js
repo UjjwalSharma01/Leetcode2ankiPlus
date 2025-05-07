@@ -4,6 +4,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { DataProvider } from "@/context/DataContext";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
+import EmailVerificationAlert from "@/components/EmailVerificationAlert";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -57,6 +58,7 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <DataProvider>
             {children}
+            <EmailVerificationAlert />
           </DataProvider>
         </AuthProvider>
         

@@ -6,7 +6,9 @@ import {
   signInWithEmailAndPassword, 
   signOut,
   createUserWithEmailAndPassword,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendEmailVerification,
+  applyActionCode
 } from 'firebase/auth';
 import { auth } from '@/firebase/firebase';
 import { getScriptUrlFromFirebase, getScriptUrlFromStorage } from '@/utils/scriptUrlManager';
@@ -19,6 +21,7 @@ const AuthContext = createContext({});
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showVerificationAlert, setShowVerificationAlert] = useState(false);
 
   // Function to login with email and password
   const login = (email, password) => {
@@ -26,13 +29,25 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Function to register with email and password
-  const signup = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  const signup = async (email, password) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    await sendEmailVerification(userCredential.user);
+    return userCredential;
   };
 
   // Function to send password reset email
   const resetPassword = (email) => {
     return sendPasswordResetEmail(auth, email);
+  };
+
+  // Function to resend verification email
+  const resendVerificationEmail = (user) => {
+    return sendEmailVerification(user);
+  };
+  
+  // Function to apply action code (for email verification)
+  const verifyEmail = (actionCode) => {
+    return applyActionCode(auth, actionCode);
   };
 
   // Function to logout
@@ -46,6 +61,13 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
+        
+        // Check if email is verified and show alert if needed
+        if (!user.emailVerified) {
+          setShowVerificationAlert(true);
+        } else {
+          setShowVerificationAlert(false);
+        }
         
         // Sync script URL from Firebase to localStorage when user logs in
         // This ensures consistent experience across devices
@@ -71,6 +93,7 @@ export const AuthProvider = ({ children }) => {
         }
       } else {
         setUser(null);
+        setShowVerificationAlert(false);
       }
       setLoading(false);
     });
@@ -79,7 +102,18 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, resetPassword, loading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      signup, 
+      logout, 
+      resetPassword, 
+      resendVerificationEmail,
+      verifyEmail,
+      loading,
+      showVerificationAlert,
+      setShowVerificationAlert 
+    }}>
       {children}
     </AuthContext.Provider>
   );
