@@ -491,7 +491,7 @@ export default function ReviewsPage() {
                   </div>
                   <div className="ml-3">
                     <p className="text-sm text-green-800 dark:text-green-300">
-                      You've completed {completed.length} review{completed.length !== 1 ? 's' : ''} today!
+                      You&apos;ve completed {completed.length} review{completed.length !== 1 ? 's' : ''} today!
                     </p>
                   </div>
                 </div>
