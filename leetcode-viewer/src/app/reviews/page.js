@@ -465,12 +465,12 @@ export default function ReviewsPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <h2 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">
-                    {showUpcoming ? "No Upcoming Reviews" : "No Reviews Due Today"}
+                    {showUpcoming ? 'No Upcoming Reviews' : 'No Reviews Due Today'}
                   </h2>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 px-4">
                     {showUpcoming 
-                      ? "There are no problems scheduled for future review." 
-                      : "There are no problems due for review today."}
+                      ? 'There are no problems scheduled for future review.' 
+                      : 'There are no problems due for review today.'}
                   </p>
                   <div className="mt-6">
                     <Link href="/problems" className="inline-flex items-center px-4 py-3 sm:py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 transition-colors min-h-[44px]">

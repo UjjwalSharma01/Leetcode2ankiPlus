@@ -90,7 +90,7 @@ export default function ResetPassword() {
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Check your inbox</h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
                 If an account exists with the email <span className="font-medium">{email}</span>,
-                we've sent a password reset link.
+                we&apos;ve sent a password reset link.
               </p>
               <div className="flex justify-center">
                 <Link 

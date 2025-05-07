@@ -83,7 +83,7 @@ export default function AuthLayout({ children }) {
               You need to verify your email address before you can access LeetCode2AnkiPlus.
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              We've sent a verification link to <span className="font-medium">{user.email}</span>
+              We&apos;ve sent a verification link to <span className="font-medium">{user.email}</span>
             </p>
             
             {resendSuccess && (

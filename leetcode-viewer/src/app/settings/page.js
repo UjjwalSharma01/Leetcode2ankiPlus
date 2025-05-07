@@ -136,7 +136,7 @@ export default function Settings() {
                     Important Note
                   </h3>
                   <p className="mt-2 text-xs text-blue-700 dark:text-blue-300">
-                    You need to deploy your script as a web application and use the web app URL. Make sure it's accessible to anyone (even anonymous) and properly configured for requests.
+                    You need to deploy your script as a web application and use the web app URL. Make sure it&apos;s accessible to anyone (even anonymous) and properly configured for requests.
                   </p>
                 </div>
                 <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">

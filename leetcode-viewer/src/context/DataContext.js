@@ -371,7 +371,7 @@ export function DataProvider({ children }) {
       setFetchingUpcomingReviews(false);
       setPendingFetchUpcomingReviews(false);
     }
-  }, [user, needsScriptUrl, fetchingUpcomingReviews, lastUpcomingReviewsFetched, dueReviews]);
+  }, [user, needsScriptUrl, fetchingUpcomingReviews, lastUpcomingReviewsFetched, dueReviews, cacheDataInSession, getDataFromCache]);
 
   // Track page changes
   useEffect(() => {
